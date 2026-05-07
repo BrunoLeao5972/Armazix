@@ -34,34 +34,36 @@ async function createSession(userId: string): Promise<string> {
 // Signup
 // ---------------------------------------------------------------------------
 
-const signupInput = z.object({
-  name: z.string().min(2).max(100),
-  email: z.string().email().max(254),
-  password: z.string().min(6).max(100),
-});
+type SignupInput = { name: string; email: string; password: string };
 
 export const signupFn = createServerFn({ method: "POST" })
-  .validator((data: unknown) => signupInput.parse(data))
+  .inputValidator((data: SignupInput) => data)
   .handler(async ({ data }) => {
+    const parsed = z.object({
+      name: z.string().min(2).max(100),
+      email: z.string().email().max(254),
+      password: z.string().min(6).max(100),
+    }).parse(data);
+
     const db = getDb();
 
     const existing = await db
       .select({ id: users.id })
       .from(users)
-      .where(eq(users.email, data.email.toLowerCase()))
+      .where(eq(users.email, parsed.email.toLowerCase()))
       .limit(1);
 
     if (existing.length > 0) {
       throw new Error("Email já cadastrado");
     }
 
-    const passwordHash = await hashValue(data.password);
+    const passwordHash = await hashValue(parsed.password);
 
     const [user] = await db
       .insert(users)
       .values({
-        name: data.name.trim(),
-        email: data.email.toLowerCase().trim(),
+        name: parsed.name.trim(),
+        email: parsed.email.toLowerCase().trim(),
         passwordHash,
       })
       .returning({ id: users.id, name: users.name });
@@ -75,25 +77,26 @@ export const signupFn = createServerFn({ method: "POST" })
 // Login
 // ---------------------------------------------------------------------------
 
-const loginInput = z.object({
-  email: z.string().email().max(254),
-  password: z.string().max(100),
-});
+type LoginInput = { email: string; password: string };
 
 export const loginFn = createServerFn({ method: "POST" })
-  .validator((data: unknown) => loginInput.parse(data))
+  .inputValidator((data: LoginInput) => data)
   .handler(async ({ data }) => {
+    const parsed = z.object({
+      email: z.string().email().max(254),
+      password: z.string().max(100),
+    }).parse(data);
+
     const db = getDb();
 
-    const passwordHash = await hashValue(data.password);
+    const passwordHash = await hashValue(parsed.password);
 
     const [user] = await db
       .select({ id: users.id, name: users.name, passwordHash: users.passwordHash })
       .from(users)
-      .where(eq(users.email, data.email.toLowerCase()))
+      .where(eq(users.email, parsed.email.toLowerCase()))
       .limit(1);
 
-    // Constant-time comparison to prevent timing attacks
     if (!user || user.passwordHash !== passwordHash) {
       throw new Error("Credenciais inválidas");
     }
@@ -107,12 +110,10 @@ export const loginFn = createServerFn({ method: "POST" })
 // Logout
 // ---------------------------------------------------------------------------
 
-const logoutInput = z.object({
-  sessionToken: z.string().min(1),
-});
+type LogoutInput = { sessionToken: string };
 
 export const logoutFn = createServerFn({ method: "POST" })
-  .validator((data: unknown) => logoutInput.parse(data))
+  .inputValidator((data: LogoutInput) => data)
   .handler(async ({ data }) => {
     const db = getDb();
     const tokenHash = await hashValue(data.sessionToken);
@@ -129,12 +130,10 @@ export const logoutFn = createServerFn({ method: "POST" })
 // Validate session (used in SSR / beforeLoad)
 // ---------------------------------------------------------------------------
 
-const validateSessionInput = z.object({
-  sessionToken: z.string().min(1),
-});
+type ValidateSessionInput = { sessionToken: string };
 
 export const validateSessionFn = createServerFn({ method: "POST" })
-  .validator((data: unknown) => validateSessionInput.parse(data))
+  .inputValidator((data: ValidateSessionInput) => data)
   .handler(async ({ data }) => {
     const db = getDb();
     const tokenHash = await hashValue(data.sessionToken);
