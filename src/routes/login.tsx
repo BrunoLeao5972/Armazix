@@ -1,6 +1,7 @@
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useAuth, selectStoreOfUser, hashPassword } from "@/lib/store";
+import { useAuth, selectStoreOfUser } from "@/lib/store";
+import { loginFn } from "@/lib/authFns";
 import { PlatformHeader } from "@/components/PlatformHeader";
 import { 
   ArrowRight, 
@@ -28,7 +29,7 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
-  const login = useAuth((s) => s.login);
+  const setSession = useAuth((s) => s.setSession);
   const [form, setForm] = useState({ email: "", password: "" });
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
@@ -38,13 +39,13 @@ function LoginPage() {
     setLoading(true);
     setErr("");
 
-    const hashed = await hashPassword(form.password);
-    const res = login(form.email, hashed);
-    if (res.ok) {
-      const store = selectStoreOfUser(res.userId);
+    try {
+      const result = await loginFn({ data: form });
+      setSession(result.userId, result.name, result.sessionToken);
+      const store = selectStoreOfUser(result.userId);
       navigate({ to: store ? "/admin" : "/onboarding" });
-    } else {
-      setErr(res.error);
+    } catch (error) {
+      setErr(error instanceof Error ? error.message : "Credenciais inválidas");
       setLoading(false);
     }
   };

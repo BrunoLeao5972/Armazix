@@ -161,21 +161,10 @@ const tenantPersistStorage = createJSONStorage(() => ({
 export type PixKeyType = "cpf" | "cnpj" | "email" | "phone" | "random";
 
 /**
- * Multi-tenant mock data layer.
- *
- * In a real backend (Cloudflare Workers / Postgres), every table below would carry
- * a `store_id` column and be protected by RLS so a user can only read/write
- * rows where store_id == their store. Here we simulate that isolation by
- * filtering everything through `storeId` in selectors.
+ * Multi-tenant data layer.
+ * Auth (users/sessions) is handled by the DB via auth.server.ts.
+ * Store/product/order data still persists in IndexedDB (browser) for now.
  */
-
-export type User = {
-  id: string;
-  name: string;
-  email: string;
-  password: string; // mock only
-  storeId: string | null;
-};
 
 export type BusinessHour = {
   day: string;
@@ -530,62 +519,32 @@ export function normalizeStore(store: Store): Store {
 
 const uid = () => crypto.randomUUID();
 
-/**
- * Hashes a plain-text password with SHA-256 via the Web Crypto API.
- * Passwords must NEVER be stored or compared in plain text.
- */
-export async function hashPassword(password: string): Promise<string> {
-  const data = new TextEncoder().encode(password);
-  const hash = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(hash))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
 // --- Auth -------------------------------------------------------------------
 
 type AuthState = {
-  users: User[];
   currentUserId: string | null;
-  signup: (data: { name: string; email: string; password: string }) =>
-    | { ok: true; userId: string }
-    | { ok: false; error: string };
-  login: (email: string, password: string) =>
-    | { ok: true; userId: string }
-    | { ok: false; error: string };
+  currentUserName: string | null;
+  sessionToken: string | null;
+  setSession: (userId: string, name: string, sessionToken: string) => void;
   setCurrentUserId: (userId: string | null) => void;
   logout: () => void;
+  /** @deprecated Store linkage is now tracked via useTenant.ownerId — kept for compatibility */
   attachStore: (userId: string, storeId: string) => void;
 };
 
 export const useAuth = create<AuthState>()(
   persist(
-    (set, get) => ({
-      users: [],
+    (set) => ({
       currentUserId: null,
-      signup: ({ name, email, password }) => {
-        const exists = get().users.find((u) => u.email === email);
-        if (exists) return { ok: false, error: "Email já cadastrado" };
-        const user: User = { id: uid(), name, email, password, storeId: null };
-        set({ users: [...get().users, user], currentUserId: user.id });
-        return { ok: true, userId: user.id };
-      },
-      login: (email, password) => {
-        const u = get().users.find(
-          (x) => x.email === email && x.password === password,
-        );
-        if (!u) return { ok: false, error: "Credenciais inválidas" };
-        set({ currentUserId: u.id });
-        return { ok: true, userId: u.id };
-      },
+      currentUserName: null,
+      sessionToken: null,
+      setSession: (userId, name, sessionToken) =>
+        set({ currentUserId: userId, currentUserName: name, sessionToken }),
       setCurrentUserId: (userId) => set({ currentUserId: userId }),
-      logout: () => set({ currentUserId: null }),
-      attachStore: (userId, storeId) =>
-        set({
-          users: get().users.map((u) =>
-            u.id === userId ? { ...u, storeId } : u,
-          ),
-        }),
+      logout: () => set({ currentUserId: null, currentUserName: null, sessionToken: null }),
+      attachStore: () => {
+        // No-op: store linkage is found via useTenant.stores[].ownerId === currentUserId
+      },
     }),
     { name: "ms-auth" },
   ),

@@ -3,8 +3,7 @@ import { useAuth } from "@/lib/store";
 import ArmazixLogo from "@/assets/Armazix-logo.png";
 
 export function PlatformHeader() {
-  const { currentUserId, users, logout } = useAuth();
-  const user = users.find((u) => u.id === currentUserId) ?? null;
+  const { currentUserId, currentUserName, logout } = useAuth();
   const navigate = useNavigate();
 
   return (
@@ -18,7 +17,7 @@ export function PlatformHeader() {
           />
         </Link>
         <nav className="flex items-center gap-2 text-sm">
-          {user ? (
+          {currentUserId ? (
             <>
               <Link
                 to="/admin"

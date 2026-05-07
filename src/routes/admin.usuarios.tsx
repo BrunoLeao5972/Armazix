@@ -2,7 +2,15 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { Check, Download, Edit2, Plus, ToggleLeft, ToggleRight, UserCircle, X } from "lucide-react";
-import { useAuth, useTenant, hashPassword, type StoreUser } from "@/lib/store";
+import { useAuth, useTenant, type StoreUser } from "@/lib/store";
+
+async function hashPassword(password: string): Promise<string> {
+  const data = new TextEncoder().encode(password);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
 
 const USER_ROLE_OPTIONS = [
   { value: "admin", label: "Admin" },

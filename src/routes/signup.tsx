@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { PlatformHeader } from "@/components/PlatformHeader";
-import { useAuth, selectStoreOfUser, hashPassword } from "@/lib/store";
+import { useAuth, selectStoreOfUser } from "@/lib/store";
+import { signupFn } from "@/lib/authFns";
 import {
   ArrowRight,
   ChevronLeft,
@@ -21,7 +22,7 @@ export const Route = createFileRoute("/signup")({
 
 function SignupPage() {
   const navigate = useNavigate();
-  const signup = useAuth((s) => s.signup);
+  const setSession = useAuth((s) => s.setSession);
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
@@ -31,16 +32,15 @@ function SignupPage() {
     setLoading(true);
     setErr("");
 
-    const hashed = await hashPassword(form.password);
-    const r = signup({ ...form, password: hashed });
-    if (!r.ok) {
-      setErr(r.error);
+    try {
+      const result = await signupFn({ data: form });
+      setSession(result.userId, result.name, result.sessionToken);
+      const store = selectStoreOfUser(result.userId);
+      navigate({ to: store ? "/admin" : "/onboarding" });
+    } catch (error) {
+      setErr(error instanceof Error ? error.message : "Erro ao criar conta");
       setLoading(false);
-      return;
     }
-
-    const store = selectStoreOfUser(r.userId);
-    navigate({ to: store ? "/admin" : "/onboarding" });
   };
 
   return (
