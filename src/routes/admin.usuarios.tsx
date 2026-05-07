@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { Check, Download, Edit2, Plus, ToggleLeft, ToggleRight, UserCircle, X } from "lucide-react";
-import { useAuth, useTenant, type StoreUser } from "@/lib/store";
+import { useAuth, useTenant, hashPassword, type StoreUser } from "@/lib/store";
 
 const USER_ROLE_OPTIONS = [
   { value: "admin", label: "Admin" },
@@ -49,16 +49,18 @@ function AdminUsuariosPage() {
   const [userErr, setUserErr] = useState("");
   const [editingUser, setEditingUser] = useState<string | null>(null);
 
-  const saveUser = () => {
+  const saveUser = async () => {
     if (!userForm.name.trim() || !userForm.password.trim() || !userForm.fullName.trim()) {
       setUserErr("Informe nome completo, credencial e senha.");
       return;
     }
 
+    const hashedPassword = await hashPassword(userForm.password);
+
     if (editingUser) {
       updateStoreUser(editingUser, {
         name: userForm.name,
-        password: userForm.password,
+        password: hashedPassword,
         fullName: userForm.fullName,
         role: userForm.role,
         active: userForm.active,
@@ -66,7 +68,7 @@ function AdminUsuariosPage() {
     } else {
       addStoreUser(storeId, {
         name: userForm.name,
-        password: userForm.password,
+        password: hashedPassword,
         fullName: userForm.fullName,
         role: userForm.role,
         active: userForm.active,

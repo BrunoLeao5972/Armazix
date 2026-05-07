@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { PlatformHeader } from "@/components/PlatformHeader";
-import { useAuth, selectStoreOfUser } from "@/lib/store";
+import { useAuth, selectStoreOfUser, hashPassword } from "@/lib/store";
 import {
   ArrowRight,
   ChevronLeft,
@@ -26,22 +26,21 @@ function SignupPage() {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErr("");
 
-    setTimeout(() => {
-      const r = signup(form);
-      if (!r.ok) {
-        setErr(r.error);
-        setLoading(false);
-        return;
-      }
+    const hashed = await hashPassword(form.password);
+    const r = signup({ ...form, password: hashed });
+    if (!r.ok) {
+      setErr(r.error);
+      setLoading(false);
+      return;
+    }
 
-      const store = selectStoreOfUser(r.userId);
-      navigate({ to: store ? "/admin" : "/onboarding" });
-    }, 800);
+    const store = selectStoreOfUser(r.userId);
+    navigate({ to: store ? "/admin" : "/onboarding" });
   };
 
   return (

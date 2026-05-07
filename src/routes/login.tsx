@@ -1,6 +1,6 @@
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useAuth, selectStoreOfUser } from "@/lib/store";
+import { useAuth, selectStoreOfUser, hashPassword } from "@/lib/store";
 import { PlatformHeader } from "@/components/PlatformHeader";
 import { 
   ArrowRight, 
@@ -12,44 +12,14 @@ import {
   ChevronLeft
 } from "lucide-react";
 
-function readPersistedUserId(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem("ms-auth");
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as {
-      state?: { currentUserId?: string | null };
-    };
-    return parsed?.state?.currentUserId ?? null;
-  } catch {
-    return null;
-  }
-}
-
-function hasPersistedStoreForUser(userId: string): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    const raw = window.localStorage.getItem("ms-tenant");
-    if (!raw) return false;
-    const parsed = JSON.parse(raw) as {
-      state?: { stores?: Array<{ ownerId?: string }> };
-    };
-    const stores = Array.isArray(parsed?.state?.stores) ? parsed.state.stores : [];
-    return stores.some((store) => store.ownerId === userId);
-  } catch {
-    return false;
-  }
-}
-
 export const Route = createFileRoute("/login")({
   beforeLoad: () => {
-    // Session is localStorage-based, so only check on client.
     if (typeof window === "undefined") return;
 
-    const userId = useAuth.getState().currentUserId ?? readPersistedUserId();
+    const userId = useAuth.getState().currentUserId;
     if (!userId) return;
 
-    const hasStore = !!selectStoreOfUser(userId) || hasPersistedStoreForUser(userId);
+    const hasStore = !!selectStoreOfUser(userId);
     throw redirect({ to: hasStore ? "/admin" : "/onboarding" });
   },
   head: () => ({ meta: [{ title: "Entrar — Armazix" }] }),
@@ -63,21 +33,20 @@ function LoginPage() {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErr("");
-    
-    setTimeout(() => {
-      const res = login(form.email, form.password);
-      if (res.ok) {
-        const store = selectStoreOfUser(res.userId);
-        navigate({ to: store ? "/admin" : "/onboarding" });
-      } else {
-        setErr(res.error);
-        setLoading(false);
-      }
-    }, 800);
+
+    const hashed = await hashPassword(form.password);
+    const res = login(form.email, hashed);
+    if (res.ok) {
+      const store = selectStoreOfUser(res.userId);
+      navigate({ to: store ? "/admin" : "/onboarding" });
+    } else {
+      setErr(res.error);
+      setLoading(false);
+    }
   };
 
   return (

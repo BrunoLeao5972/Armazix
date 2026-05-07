@@ -30,46 +30,15 @@ import {
   PanelLeftOpen,
 } from "lucide-react";
 
-function readPersistedUserId(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem("ms-auth");
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as {
-      state?: { currentUserId?: string | null };
-    };
-    return parsed?.state?.currentUserId ?? null;
-  } catch {
-    return null;
-  }
-}
-
-function readPersistedStoreOfUser(userId: string): Store | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem("ms-tenant");
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as {
-      state?: { stores?: Store[] };
-    };
-    const stores = Array.isArray(parsed?.state?.stores) ? parsed.state.stores : [];
-    return stores.find((store) => store.ownerId === userId) ?? null;
-  } catch {
-    return null;
-  }
-}
-
 export const Route = createFileRoute("/admin")({
   beforeLoad: () => {
-    // Session is persisted in localStorage, so SSR cannot validate it.
     if (typeof window === "undefined") return;
 
-    const userId = useAuth.getState().currentUserId ?? readPersistedUserId();
+    const userId = useAuth.getState().currentUserId;
     if (!userId) throw redirect({ to: "/login" });
 
     const storeFromState = selectStoreOfUser(userId);
-    const storeFromPersist = readPersistedStoreOfUser(userId);
-    if (!storeFromState && !storeFromPersist) {
+    if (!storeFromState) {
       throw redirect({ to: "/onboarding" });
     }
   },
@@ -83,6 +52,11 @@ function AdminLayout() {
   const tenantHydrated = useTenant.persist?.hasHydrated() ?? true;
   const userId = useAuth((s) => s.currentUserId);
   const logout = useAuth((s) => s.logout);
+  const handleLogout = () => {
+    logout();
+    window.location.assign("/login");
+  };
+
   // Use specific selectors to avoid re-renders when other store properties change
   const storeId = useTenant((s) =>
     userId ? s.stores.find((x) => x.ownerId === userId)?.id : null,
@@ -160,10 +134,10 @@ function AdminLayout() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-[#F9FAFB] dark:bg-background">
+    <div className="flex h-screen overflow-hidden bg-[#F9FAFB] dark:bg-background">
       {/* SIDEBAR */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 border-r border-border bg-card transition-all duration-300 lg:static lg:block ${
+        className={`fixed inset-y-0 left-0 z-50 border-r border-border bg-card transition-all duration-300 ${
           sidebarCollapsed ? "w-20" : "w-64"
         }`}
       >
@@ -274,7 +248,7 @@ function AdminLayout() {
               <span className={sidebarCollapsed ? "hidden" : "block"}>Ver Loja Pública</span>
             </a>
             <button
-              onClick={logout}
+              onClick={handleLogout}
               className={`mt-1 flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-destructive/5 hover:text-destructive ${
                 sidebarCollapsed ? "justify-center" : "gap-3"
               }`}
@@ -288,7 +262,11 @@ function AdminLayout() {
       </aside>
 
       {/* MAIN CONTENT AREA */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div
+        className={`flex flex-1 flex-col overflow-hidden transition-[margin-left] duration-300 ${
+          sidebarCollapsed ? "lg:ml-20" : "lg:ml-64"
+        }`}
+      >
         {/* TOPBAR */}
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-card/80 px-8 backdrop-blur-md">
           <div className="flex flex-1 items-center gap-4">

@@ -1,6 +1,162 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 import { type Plan, PLAN_LIMITS } from "./plans";
+
+const PERSIST_DB_NAME = "armazix-persist";
+const PERSIST_STORE_NAME = "zustand";
+const TENANT_PERSIST_KEY = "ms-tenant";
+const TENANT_PERSIST_SIGNAL_KEY = `${TENANT_PERSIST_KEY}__signal`;
+
+function canUseBrowserStorage() {
+  return typeof window !== "undefined";
+}
+
+function notifyPersistChange(key: string) {
+  if (!canUseBrowserStorage()) return;
+
+  try {
+    window.localStorage.setItem(`${key}__signal`, String(Date.now()));
+  } catch {
+    // Ignore cross-tab notification failures.
+  }
+}
+
+function readLocalStorageItem(key: string) {
+  if (!canUseBrowserStorage()) return null;
+
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeLocalStorageItem(key: string, value: string) {
+  if (!canUseBrowserStorage()) return;
+
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // Ignore fallback storage failures.
+  }
+}
+
+function removeLocalStorageItem(key: string) {
+  if (!canUseBrowserStorage()) return;
+
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // Ignore fallback storage failures.
+  }
+}
+
+async function openPersistDb(): Promise<IDBDatabase | null> {
+  if (!canUseBrowserStorage() || typeof window.indexedDB === "undefined") {
+    return null;
+  }
+
+  return new Promise((resolve) => {
+    const request = window.indexedDB.open(PERSIST_DB_NAME, 1);
+
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(PERSIST_STORE_NAME)) {
+        db.createObjectStore(PERSIST_STORE_NAME);
+      }
+    };
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => resolve(null);
+  });
+}
+
+async function readIndexedDbItem(key: string): Promise<string | null> {
+  const db = await openPersistDb();
+  if (!db) {
+    return readLocalStorageItem(key);
+  }
+
+  return new Promise((resolve) => {
+    const tx = db.transaction(PERSIST_STORE_NAME, "readonly");
+    const store = tx.objectStore(PERSIST_STORE_NAME);
+    const request = store.get(key);
+
+    request.onsuccess = () => resolve(typeof request.result === "string" ? request.result : null);
+    request.onerror = () => resolve(readLocalStorageItem(key));
+    tx.oncomplete = () => db.close();
+    tx.onerror = () => db.close();
+    tx.onabort = () => db.close();
+  });
+}
+
+async function writeIndexedDbItem(key: string, value: string): Promise<void> {
+  const db = await openPersistDb();
+  if (!db) {
+    writeLocalStorageItem(key, value);
+    notifyPersistChange(key);
+    return;
+  }
+
+  await new Promise<void>((resolve) => {
+    const tx = db.transaction(PERSIST_STORE_NAME, "readwrite");
+    tx.objectStore(PERSIST_STORE_NAME).put(value, key);
+
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = () => {
+      db.close();
+      writeLocalStorageItem(key, value);
+      resolve();
+    };
+    tx.onabort = () => {
+      db.close();
+      writeLocalStorageItem(key, value);
+      resolve();
+    };
+  });
+
+  notifyPersistChange(key);
+}
+
+async function removeIndexedDbItem(key: string): Promise<void> {
+  const db = await openPersistDb();
+  if (!db) {
+    removeLocalStorageItem(key);
+    notifyPersistChange(key);
+    return;
+  }
+
+  await new Promise<void>((resolve) => {
+    const tx = db.transaction(PERSIST_STORE_NAME, "readwrite");
+    tx.objectStore(PERSIST_STORE_NAME).delete(key);
+
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = () => {
+      db.close();
+      removeLocalStorageItem(key);
+      resolve();
+    };
+    tx.onabort = () => {
+      db.close();
+      removeLocalStorageItem(key);
+      resolve();
+    };
+  });
+
+  notifyPersistChange(key);
+}
+
+const tenantPersistStorage = createJSONStorage(() => ({
+  getItem: (key) => readIndexedDbItem(key),
+  setItem: (key, value) => writeIndexedDbItem(key, value),
+  removeItem: (key) => removeIndexedDbItem(key),
+}));
 
 export type PixKeyType = "cpf" | "cnpj" | "email" | "phone" | "random";
 
@@ -26,6 +182,9 @@ export type BusinessHour = {
   open: string;
   close: string;
   closed: boolean;
+  hasBreak: boolean;
+  breakStart: string;
+  breakEnd: string;
 };
 
 export type DeliveryFee = {
@@ -42,10 +201,20 @@ export type AddressInfo = {
   complement: string;
 };
 
+export type StoreBanner = {
+  imageUrl: string;
+  title: string;
+  subtitle: string;
+  autoAdvanceSeconds: number;
+};
+
 export type Store = {
   id: string;
   ownerId: string;
   name: string;
+  logoUrl?: string;
+  banners: StoreBanner[];
+  banner?: StoreBanner;
   slug: string;
   taxId: string;
   cnpj: string;
@@ -181,13 +350,69 @@ export type StoreUser = {
 };
 
 const DEFAULT_BUSINESS_HOURS: BusinessHour[] = [
-  { day: "Segunda-feira", open: "08:00", close: "18:00", closed: false },
-  { day: "Terca-feira", open: "08:00", close: "18:00", closed: false },
-  { day: "Quarta-feira", open: "08:00", close: "18:00", closed: false },
-  { day: "Quinta-feira", open: "08:00", close: "18:00", closed: false },
-  { day: "Sexta-feira", open: "08:00", close: "18:00", closed: false },
-  { day: "Sabado", open: "08:00", close: "13:00", closed: false },
-  { day: "Domingo", open: "08:00", close: "12:00", closed: true },
+  {
+    day: "Segunda-feira",
+    open: "08:00",
+    close: "18:00",
+    closed: false,
+    hasBreak: false,
+    breakStart: "12:00",
+    breakEnd: "13:00",
+  },
+  {
+    day: "Terca-feira",
+    open: "08:00",
+    close: "18:00",
+    closed: false,
+    hasBreak: false,
+    breakStart: "12:00",
+    breakEnd: "13:00",
+  },
+  {
+    day: "Quarta-feira",
+    open: "08:00",
+    close: "18:00",
+    closed: false,
+    hasBreak: false,
+    breakStart: "12:00",
+    breakEnd: "13:00",
+  },
+  {
+    day: "Quinta-feira",
+    open: "08:00",
+    close: "18:00",
+    closed: false,
+    hasBreak: false,
+    breakStart: "12:00",
+    breakEnd: "13:00",
+  },
+  {
+    day: "Sexta-feira",
+    open: "08:00",
+    close: "18:00",
+    closed: false,
+    hasBreak: false,
+    breakStart: "12:00",
+    breakEnd: "13:00",
+  },
+  {
+    day: "Sabado",
+    open: "08:00",
+    close: "13:00",
+    closed: false,
+    hasBreak: false,
+    breakStart: "12:00",
+    breakEnd: "13:00",
+  },
+  {
+    day: "Domingo",
+    open: "08:00",
+    close: "12:00",
+    closed: true,
+    hasBreak: false,
+    breakStart: "12:00",
+    breakEnd: "13:00",
+  },
 ];
 
 const DEFAULT_ADDRESS_INFO: AddressInfo = {
@@ -203,6 +428,35 @@ const DEFAULT_DELIVERY_FEES: DeliveryFee[] = [
   { label: "Entrega padrao", fee: 0 },
 ];
 
+const DEFAULT_STORE_BANNER: StoreBanner = {
+  imageUrl:
+    "https://images.unsplash.com/photo-1592861956120-e524fc739696?auto=format&fit=crop&q=80&w=1400",
+  title: "Combos Inteligentes",
+  subtitle: "Sugestoes prontas para seu carrinho render mais",
+  autoAdvanceSeconds: 5,
+};
+
+function normalizeStoreBanners(
+  banners: StoreBanner[] | undefined,
+  legacyBanner: StoreBanner | undefined,
+): StoreBanner[] {
+  const source = Array.isArray(banners) && banners.length > 0
+    ? banners
+    : legacyBanner
+      ? [legacyBanner]
+      : [];
+
+  return source.slice(0, 3).map((banner) => ({
+    imageUrl: banner.imageUrl?.trim() || DEFAULT_STORE_BANNER.imageUrl,
+    title: banner.title?.trim() || DEFAULT_STORE_BANNER.title,
+    subtitle: banner.subtitle?.trim() || DEFAULT_STORE_BANNER.subtitle,
+    autoAdvanceSeconds:
+      Number.isFinite(Number(banner.autoAdvanceSeconds)) && Number(banner.autoAdvanceSeconds) >= 2
+        ? Math.min(30, Math.max(2, Math.round(Number(banner.autoAdvanceSeconds))))
+        : DEFAULT_STORE_BANNER.autoAdvanceSeconds,
+  }));
+}
+
 export function normalizeStore(store: Store): Store {
   const rawBusinessHours = store.businessHours ?? [];
   const rawFees = store.delivery?.fees ?? [];
@@ -210,6 +464,8 @@ export function normalizeStore(store: Store): Store {
   return {
     ...store,
     taxId: store.taxId ?? store.cnpj ?? "",
+    logoUrl: store.logoUrl ?? "",
+    banners: normalizeStoreBanners(store.banners, store.banner),
     cnpj: store.cnpj ?? "",
     phones: Array.isArray(store.phones)
       ? store.phones.filter((p) => p.trim().length > 0)
@@ -233,6 +489,9 @@ export function normalizeStore(store: Store): Store {
             open: h.open,
             close: h.close,
             closed: h.closed,
+            hasBreak: h.hasBreak ?? false,
+            breakStart: h.breakStart ?? "12:00",
+            breakEnd: h.breakEnd ?? "13:00",
           }))
         : DEFAULT_BUSINESS_HOURS.map((h) => ({ ...h })),
     whatsapp: store.whatsapp ?? "",
@@ -269,7 +528,19 @@ export function normalizeStore(store: Store): Store {
   };
 }
 
-const uid = () => Math.random().toString(36).slice(2, 10);
+const uid = () => crypto.randomUUID();
+
+/**
+ * Hashes a plain-text password with SHA-256 via the Web Crypto API.
+ * Passwords must NEVER be stored or compared in plain text.
+ */
+export async function hashPassword(password: string): Promise<string> {
+  const data = new TextEncoder().encode(password);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
 
 // --- Auth -------------------------------------------------------------------
 
@@ -282,6 +553,7 @@ type AuthState = {
   login: (email: string, password: string) =>
     | { ok: true; userId: string }
     | { ok: false; error: string };
+  setCurrentUserId: (userId: string | null) => void;
   logout: () => void;
   attachStore: (userId: string, storeId: string) => void;
 };
@@ -306,6 +578,7 @@ export const useAuth = create<AuthState>()(
         set({ currentUserId: u.id });
         return { ok: true, userId: u.id };
       },
+      setCurrentUserId: (userId) => set({ currentUserId: userId }),
       logout: () => set({ currentUserId: null }),
       attachStore: (userId, storeId) =>
         set({
@@ -380,6 +653,8 @@ export const useTenant = create<TenantState>()(
           id: uid(),
           ownerId,
           name,
+          logoUrl: "",
+          banners: [],
           slug: cleanSlug,
               taxId: "",
           cnpj: "",
@@ -542,7 +817,10 @@ export const useTenant = create<TenantState>()(
       removeStoreUser: (id) =>
         set({ storeUsers: get().storeUsers.filter((u) => u.id !== id) }),
     }),
-    { name: "ms-tenant" },
+    {
+      name: TENANT_PERSIST_KEY,
+      storage: tenantPersistStorage,
+    },
   ),
 );
 
@@ -617,6 +895,33 @@ export const useCart = create<CartState>()(
     { name: "ms-cart" },
   ),
 );
+
+function syncPersistedStoresAcrossTabs() {
+  if (typeof window === "undefined") return;
+  if ((window as Window & { __armazixPersistSyncReady?: boolean }).__armazixPersistSyncReady) return;
+
+  (window as Window & { __armazixPersistSyncReady?: boolean }).__armazixPersistSyncReady = true;
+
+  window.addEventListener("storage", (event) => {
+    if (event.storageArea !== window.localStorage || !event.key) return;
+
+    if (event.key === "ms-auth") {
+      void useAuth.persist.rehydrate();
+      return;
+    }
+
+    if (event.key === TENANT_PERSIST_SIGNAL_KEY) {
+      void useTenant.persist.rehydrate();
+      return;
+    }
+
+    if (event.key === "ms-cart") {
+      void useCart.persist.rehydrate();
+    }
+  });
+}
+
+syncPersistedStoresAcrossTabs();
 
 export const formatBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });

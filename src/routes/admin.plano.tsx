@@ -14,7 +14,7 @@ import {
   getPlanFromExternalReference,
   isUpgrade,
 } from "@/lib/plans";
-import { createMercadoPagoPreference } from "@/lib/mercadopago";
+import { createMercadoPagoPreference, verifyMercadoPagoPayment } from "@/lib/mercadopago";
 import {
   Check,
   Crown,
@@ -66,7 +66,11 @@ function PlanoPage() {
   // Handle return from MercadoPago after payment
   useEffect(() => {
     if (!storeId) return;
-    if (search.collection_status !== "approved" || !search.external_reference) {
+    if (
+      search.collection_status !== "approved" ||
+      !search.external_reference ||
+      !search.payment_id
+    ) {
       return;
     }
 
@@ -74,43 +78,59 @@ function PlanoPage() {
       return;
     }
 
-    const billingKind = getBillingKindFromExternalReference(
-      search.external_reference,
-    );
-    const plan = getPlanFromExternalReference(search.external_reference);
-    const refStoreId = getStoreIdFromExternalReference(search.external_reference);
-    if (!billingKind || !plan || refStoreId !== storeId) {
-      return;
-    }
-
-    processedPaymentRef.current = search.external_reference;
-
-    if (billingKind === "plan") {
-      if (currentPlan !== plan) {
-        useTenant.getState().upgradePlan(storeId, plan);
-      }
-      setActivated((prev) =>
-        prev?.type === "plan" && prev.plan === plan
-          ? prev
-          : { type: "plan", plan },
-      );
-    }
-
-    if (billingKind === "pdv" && currentPlan !== "free") {
-      useTenant.getState().updateStore(storeId, {
-        pdvAccess: true,
-        pdvEnabled: true,
+    const run = async () => {
+      const verification = await verifyMercadoPagoPayment({
+        data: {
+          paymentId: search.payment_id!,
+          expectedExternalReference: search.external_reference,
+        },
       });
-      setActivated((prev) => (prev?.type === "pdv" ? prev : { type: "pdv" }));
-    }
 
-    // Clean URL params once so the activation flow does not run repeatedly.
-    // Use history.replaceState to avoid router state churn inside this effect.
-    window.history.replaceState({}, "", "/admin/plano");
+      if (!verification.ok || verification.status !== "approved") {
+        return;
+      }
+
+      const billingKind = getBillingKindFromExternalReference(
+        search.external_reference!,
+      );
+      const plan = getPlanFromExternalReference(search.external_reference!);
+      const refStoreId = getStoreIdFromExternalReference(search.external_reference!);
+      if (!billingKind || !plan || refStoreId !== storeId) {
+        return;
+      }
+
+      processedPaymentRef.current = search.external_reference!;
+
+      if (billingKind === "plan") {
+        if (currentPlan !== plan) {
+          useTenant.getState().upgradePlan(storeId, plan);
+        }
+        setActivated((prev) =>
+          prev?.type === "plan" && prev.plan === plan
+            ? prev
+            : { type: "plan", plan },
+        );
+      }
+
+      if (billingKind === "pdv" && currentPlan !== "free") {
+        useTenant.getState().updateStore(storeId, {
+          pdvAccess: true,
+          pdvEnabled: true,
+        });
+        setActivated((prev) => (prev?.type === "pdv" ? prev : { type: "pdv" }));
+      }
+
+      // Clean URL params once so the activation flow does not run repeatedly.
+      // Use history.replaceState to avoid router state churn inside this effect.
+      window.history.replaceState({}, "", "/admin/plano");
+    };
+
+    void run();
   }, [
     currentPlan,
     search.collection_status,
     search.external_reference,
+    search.payment_id,
     storeId,
   ]);
 

@@ -26,3 +26,4 @@ export type PreferenceResult = {
 };
 
 export { createMercadoPagoPreferenceFn as createMercadoPagoPreference } from "@/routes/-api.mercadopago";
+export { verifyMercadoPagoPaymentFn as verifyMercadoPagoPayment } from "@/routes/-api.mercadopago";

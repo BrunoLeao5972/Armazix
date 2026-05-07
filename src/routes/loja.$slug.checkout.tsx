@@ -11,7 +11,7 @@ import {
   formatBRL,
   normalizeStore,
 } from "@/lib/store";
-import { createMercadoPagoPreference } from "@/lib/mercadopago";
+import { createMercadoPagoPreference, verifyMercadoPagoPayment } from "@/lib/mercadopago";
 import { CheckCircle2, CreditCard, Clock } from "lucide-react";
 
 export const Route = createFileRoute("/loja/$slug/checkout")({
@@ -104,20 +104,32 @@ function CheckoutPage() {
   useEffect(() => {
     const status = search.collection_status;
     const ref = search.external_reference;
-    if (!status || !ref || !ref.startsWith(`order:${slug}:`)) return;
+    const paymentId = search.payment_id;
+    if (!status || !ref || !paymentId || !ref.startsWith(`order:${slug}:`)) return;
 
     const orderId = ref.slice(`order:${slug}:`.length);
 
-    if (status === "approved") {
-      updateOrderStatus(orderId, "paid");
-      setPaymentStatus("approved");
-      setDone(true);
-    } else if (status === "pending") {
-      setPaymentStatus("pending");
-      setDone(true);
-    } else {
-      setPaymentStatus("failed");
-    }
+    const run = async () => {
+      const verification = await verifyMercadoPagoPayment({
+        data: {
+          paymentId,
+          expectedExternalReference: ref,
+        },
+      });
+
+      if (verification.status === "approved" && verification.ok) {
+        updateOrderStatus(orderId, "paid");
+        setPaymentStatus("approved");
+        setDone(true);
+      } else if (verification.status === "pending") {
+        setPaymentStatus("pending");
+        setDone(true);
+      } else {
+        setPaymentStatus("failed");
+      }
+    };
+
+    void run();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
