@@ -35,6 +35,7 @@ export const Route = createRootRoute({
         name: "description",
         content: "Armazix: plataforma para criar e gerenciar sua loja online.",
       },
+      { name: "application-name", content: "Armazix" },
       { name: "author", content: "Armazix" },
       { property: "og:title", content: "Armazix" },
       {
@@ -42,6 +43,8 @@ export const Route = createRootRoute({
         content: "Armazix: plataforma para criar e gerenciar sua loja online.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:locale", content: "pt_BR" },
+      { property: "og:site_name", content: "Armazix" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@armazix" },
     ],
@@ -64,7 +67,7 @@ export const Route = createRootRoute({
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="pt-BR">
       <head>
         <HeadContent />
       </head>

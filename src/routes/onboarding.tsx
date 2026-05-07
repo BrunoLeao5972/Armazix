@@ -4,7 +4,12 @@ import { PlatformHeader } from "@/components/PlatformHeader";
 import { useAuth, useTenant, selectStoreOfUser } from "@/lib/store";
 
 export const Route = createFileRoute("/onboarding")({
-  head: () => ({ meta: [{ title: "Criar loja — Armazix" }] }),
+  head: () => ({
+    meta: [
+      { title: "Criar loja — Armazix" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   beforeLoad: () => {
     const userId = useAuth.getState().currentUserId;
     if (!userId) throw redirect({ to: "/login" });

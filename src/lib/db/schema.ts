@@ -17,6 +17,7 @@ export const users = pgTable(
     name: text("name").notNull(),
     email: text("email").notNull(),
     passwordHash: text("password_hash").notNull(),
+    emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -26,6 +27,36 @@ export const users = pgTable(
   },
   (table) => ({
     emailUnique: uniqueIndex("users_email_unique").on(table.email),
+  }),
+);
+
+export const emailAuthCodes = pgTable(
+  "email_auth_codes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    purpose: text("purpose").notNull(),
+    codeHash: text("code_hash").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    attempts: integer("attempts").default(0).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    codeHashIdx: index("email_auth_codes_code_hash_idx").on(table.codeHash),
+    userPurposeIdx: index("email_auth_codes_user_purpose_idx").on(
+      table.userId,
+      table.purpose,
+    ),
+    emailPurposeIdx: index("email_auth_codes_email_purpose_idx").on(
+      table.email,
+      table.purpose,
+    ),
   }),
 );
 

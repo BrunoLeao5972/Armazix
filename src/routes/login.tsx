@@ -23,7 +23,12 @@ export const Route = createFileRoute("/login")({
     const hasStore = !!selectStoreOfUser(userId);
     throw redirect({ to: hasStore ? "/admin" : "/onboarding" });
   },
-  head: () => ({ meta: [{ title: "Entrar — Armazix" }] }),
+  head: () => ({
+    meta: [
+      { title: "Entrar — Armazix" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: LoginPage,
 });
 
@@ -138,9 +143,9 @@ function LoginPage() {
                     <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
                       Senha
                     </label>
-                    <a href="#" className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">
+                    <Link to="/recuperar-senha" className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">
                       Esqueceu a senha?
-                    </a>
+                    </Link>
                   </div>
                   <div className="relative group">
                     <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />

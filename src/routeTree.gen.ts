@@ -9,7 +9,11 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VerificarEmailRouteImport } from './routes/verificar-email'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
+import { Route as RecuperarSenhaRouteImport } from './routes/recuperar-senha'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -26,9 +30,29 @@ import { Route as AdminCadastrosRouteImport } from './routes/admin.cadastros'
 import { Route as LojaSlugCheckoutRouteImport } from './routes/loja.$slug.checkout'
 import { Route as ApiMercadopagoWebhookRouteImport } from './routes/api.mercadopago.webhook'
 
+const VerificarEmailRoute = VerificarEmailRouteImport.update({
+  id: '/verificar-email',
+  path: '/verificar-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecuperarSenhaRoute = RecuperarSenhaRouteImport.update({
+  id: '/recuperar-senha',
+  path: '/recuperar-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -112,7 +136,11 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/recuperar-senha': typeof RecuperarSenhaRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/signup': typeof SignupRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/verificar-email': typeof VerificarEmailRoute
   '/admin/cadastros': typeof AdminCadastrosRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
@@ -129,7 +157,11 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/recuperar-senha': typeof RecuperarSenhaRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/signup': typeof SignupRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/verificar-email': typeof VerificarEmailRoute
   '/admin/cadastros': typeof AdminCadastrosRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
@@ -148,7 +180,11 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/recuperar-senha': typeof RecuperarSenhaRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/signup': typeof SignupRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/verificar-email': typeof VerificarEmailRoute
   '/admin/cadastros': typeof AdminCadastrosRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
@@ -168,7 +204,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/login'
     | '/onboarding'
+    | '/recuperar-senha'
+    | '/robots.txt'
     | '/signup'
+    | '/sitemap.xml'
+    | '/verificar-email'
     | '/admin/cadastros'
     | '/admin/clientes'
     | '/admin/configuracoes'
@@ -185,7 +225,11 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/onboarding'
+    | '/recuperar-senha'
+    | '/robots.txt'
     | '/signup'
+    | '/sitemap.xml'
+    | '/verificar-email'
     | '/admin/cadastros'
     | '/admin/clientes'
     | '/admin/configuracoes'
@@ -203,7 +247,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/login'
     | '/onboarding'
+    | '/recuperar-senha'
+    | '/robots.txt'
     | '/signup'
+    | '/sitemap.xml'
+    | '/verificar-email'
     | '/admin/cadastros'
     | '/admin/clientes'
     | '/admin/configuracoes'
@@ -222,18 +270,50 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
+  RecuperarSenhaRoute: typeof RecuperarSenhaRoute
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
   SignupRoute: typeof SignupRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  VerificarEmailRoute: typeof VerificarEmailRoute
   LojaSlugRoute: typeof LojaSlugRouteWithChildren
   ApiMercadopagoWebhookRoute: typeof ApiMercadopagoWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/verificar-email': {
+      id: '/verificar-email'
+      path: '/verificar-email'
+      fullPath: '/verificar-email'
+      preLoaderRoute: typeof VerificarEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signup': {
       id: '/signup'
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recuperar-senha': {
+      id: '/recuperar-senha'
+      path: '/recuperar-senha'
+      fullPath: '/recuperar-senha'
+      preLoaderRoute: typeof RecuperarSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -385,7 +465,11 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
+  RecuperarSenhaRoute: RecuperarSenhaRoute,
+  RobotsDottxtRoute: RobotsDottxtRoute,
   SignupRoute: SignupRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
+  VerificarEmailRoute: VerificarEmailRoute,
   LojaSlugRoute: LojaSlugRouteWithChildren,
   ApiMercadopagoWebhookRoute: ApiMercadopagoWebhookRoute,
 }

@@ -26,19 +26,95 @@ import productsImg from "@/assets/products-flatlay.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Armazix — Crie sua loja online em minutos" },
+      { title: "Crie sua loja online grátis | Plataforma de e-commerce para lojistas | Armazix" },
       {
         name: "description",
         content:
-          "Plataforma multi-loja para empreendedores: cadastre produtos, receba pedidos e compartilhe sua loja com um link único.",
+          "Crie sua loja online grátis com a Armazix. Plataforma de e-commerce para lojistas venderem mais, cadastrar produtos, receber pedidos e começar sua loja em minutos.",
       },
-      { property: "og:title", content: "Armazix — Sua loja online" },
+      {
+        name: "keywords",
+        content:
+          "loja online, e-commerce, ecommerce, criar loja online, comece sua loja grátis, plataforma para lojas, loja virtual, sistema para lojistas, vender online",
+      },
+      { name: "robots", content: "index, follow, max-image-preview:large" },
+      { property: "og:title", content: "Crie sua loja online grátis com a Armazix" },
       {
         property: "og:description",
-        content: "Crie sua loja online grátis e comece a vender hoje.",
+        content: "Monte sua loja virtual, cadastre produtos e receba pedidos com uma plataforma feita para pequenos lojistas.",
       },
+      { property: "og:type", content: "website" },
       { property: "og:image", content: heroImg },
+      { name: "twitter:title", content: "Crie sua loja online grátis com a Armazix" },
+      {
+        name: "twitter:description",
+        content: "Plataforma de e-commerce para criar sua loja, vender online e organizar pedidos em minutos.",
+      },
       { name: "twitter:image", content: heroImg },
+      {
+        "script:ld+json": {
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          name: "Armazix",
+          applicationCategory: "BusinessApplication",
+          operatingSystem: "Web",
+          description:
+            "Plataforma de e-commerce para criar loja online, cadastrar produtos, receber pedidos e começar a vender pela internet.",
+          offers: {
+            "@type": "Offer",
+            price: "0",
+            priceCurrency: "BRL",
+          },
+          keywords: "loja online, e-commerce, criar loja online, loja virtual, comece sua loja grátis",
+        },
+      },
+      {
+        "script:ld+json": {
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "Armazix",
+          description: "Plataforma para lojistas criarem e gerenciarem lojas online.",
+          slogan: "Crie sua loja online grátis",
+        },
+      },
+      {
+        "script:ld+json": {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: [
+            {
+              "@type": "Question",
+              name: "Como criar uma loja online grátis?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Na Armazix você cria sua conta, cadastra produtos e publica sua loja com um link público em poucos minutos.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "A Armazix serve para e-commerce local?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Sim. A plataforma atende lojas locais com catálogo online, pedidos e gestão simples para vender por cidade e bairro.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "Preciso de conhecimento técnico para começar?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Não. A proposta da Armazix é facilitar o e-commerce para pequenos lojistas sem complexidade técnica.",
+              },
+            },
+          ],
+        },
+      },
+    ],
+    links: [
+      {
+        rel: "canonical",
+        href: "/",
+      },
     ],
   }),
   component: Landing,
@@ -765,6 +841,60 @@ function Landing() {
             </p>
           </div>
         </div>
+        </div>
+      </section>
+
+      {/* SEO CONTENT */}
+      <section className="mx-auto max-w-7xl px-6 py-20">
+        <div className="grid gap-6 rounded-3xl border border-border bg-card p-8 shadow-[var(--shadow-sm)] lg:grid-cols-2">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+              Plataforma de e-commerce para lojas locais
+            </h2>
+            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+              A Armazix foi criada para quem pesquisa por loja virtual simples,
+              e-commerce para pequenos negócios e sistema para vender online sem
+              complicação. Se você quer começar sua loja grátis e publicar seu
+              catálogo em poucos minutos, essa página foi feita para você.
+            </p>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              Funciona bem para comércio de bairro, lojas de cidade pequena,
+              operação local e vendas por WhatsApp. Você cria sua loja online,
+              compartilha um link público e organiza pedidos em um único painel.
+            </p>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-foreground">Perguntas frequentes</h3>
+            <div className="mt-4 space-y-4 text-sm text-muted-foreground">
+              <div>
+                <p className="font-semibold text-foreground">
+                  Como criar uma loja online grátis?
+                </p>
+                <p>
+                  Clique em "Criar minha loja grátis", faça seu cadastro e
+                  publique os primeiros produtos para começar a vender.
+                </p>
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">
+                  A Armazix serve para e-commerce local?
+                </p>
+                <p>
+                  Sim. Você pode vender para seu bairro e cidade com catálogo
+                  online, retirada na loja e gestão de pedidos.
+                </p>
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">
+                  Preciso de conhecimento técnico para começar?
+                </p>
+                <p>
+                  Não. O foco é simplicidade para lojistas que querem sair da
+                  planilha e vender online rapidamente.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

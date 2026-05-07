@@ -1,7 +1,6 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { PlatformHeader } from "@/components/PlatformHeader";
-import { useAuth, selectStoreOfUser } from "@/lib/store";
 import { signupFn } from "@/lib/authFns";
 import {
   ArrowRight,
@@ -16,27 +15,46 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/signup")({
-  head: () => ({ meta: [{ title: "Criar conta — Armazix" }] }),
+  head: () => ({
+    meta: [
+      { title: "Criar loja grátis | Cadastre sua conta na Armazix" },
+      {
+        name: "description",
+        content:
+          "Comece sua loja grátis na Armazix. Crie sua conta, publique produtos e tenha sua operação de e-commerce pronta para vender online.",
+      },
+      {
+        name: "keywords",
+        content: "criar loja grátis, criar loja online, cadastro lojista, ecommerce para pequenas lojas",
+      },
+      { name: "robots", content: "index, follow" },
+    ],
+    links: [{ rel: "canonical", href: "/signup" }],
+  }),
   component: SignupPage,
 });
 
 function SignupPage() {
-  const navigate = useNavigate();
-  const setSession = useAuth((s) => s.setSession);
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [err, setErr] = useState("");
+  const [okMsg, setOkMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErr("");
+    setOkMsg("");
 
     try {
-      const result = await signupFn({ data: form });
-      setSession(result.userId, result.name, result.sessionToken);
-      const store = selectStoreOfUser(result.userId);
-      navigate({ to: store ? "/admin" : "/onboarding" });
+      const result = (await signupFn({ data: form })) as {
+        ok: boolean;
+        requiresEmailVerification: boolean;
+        email: string;
+      };
+
+      setOkMsg("Conta criada. Enviamos um codigo de verificacao para seu e-mail.");
+      window.location.assign(`/verificar-email?email=${encodeURIComponent(result.email)}`);
     } catch (error) {
       setErr(error instanceof Error ? error.message : "Erro ao criar conta");
       setLoading(false);
@@ -160,6 +178,13 @@ function SignupPage() {
                   <div className="animate-in fade-in slide-in-from-top-2 rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-xs font-bold text-destructive flex items-center gap-3">
                     <div className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
                     {err}
+                  </div>
+                )}
+
+                {okMsg && (
+                  <div className="animate-in fade-in slide-in-from-top-2 rounded-xl border border-emerald-300/40 bg-emerald-500/10 p-4 text-xs font-bold text-emerald-700 flex items-center gap-3">
+                    <div className="h-2 w-2 rounded-full bg-emerald-600" />
+                    {okMsg}
                   </div>
                 )}
 
