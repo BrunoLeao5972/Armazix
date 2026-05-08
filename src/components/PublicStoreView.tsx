@@ -30,6 +30,45 @@ type PublicStoreViewProps = {
   slug: string;
   rootHref?: string;
   checkoutHref?: string;
+  /** Data preloaded from the server DB (takes priority over local Zustand state) */
+  serverData?: {
+    store: {
+      id: string;
+      name: string;
+      slug: string;
+      description: string;
+      logoUrl?: string | null;
+      phones?: unknown;
+      whatsapp?: string | null;
+      address?: string | null;
+      addressInfo?: { cep: string; street: string; number: string; city: string; state: string; complement: string } | null;
+      businessHours?: unknown;
+      delivery?: { pickup: boolean; localDelivery: boolean; fee: number; fees: { label: string; fee: number }[] } | null;
+      payments?: { pix: boolean; card: boolean; cash: boolean; credit: boolean; debit: boolean; pixKeyType: string; pixBank: string; pixKey: string; pixReceiverName: string; pixReceiverDocument: string; pixQrCode: string } | null;
+      banners?: { imageUrl: string; title: string; subtitle: string; autoAdvanceSeconds: number }[] | null;
+      categories?: unknown;
+      plan: string;
+    };
+    products: {
+      id: string;
+      storeId: string;
+      code: number;
+      name: string;
+      description: string;
+      price: number; // cents
+      stock: number;
+      unit: string;
+      minStock: number;
+      category: string;
+      imageUrl?: string | null;
+      images?: unknown;
+      active: boolean;
+      featured: boolean;
+      onPromotion: boolean;
+      promotionPrice?: number | null;
+      variations?: unknown;
+    }[];
+  } | null;
 };
 
 type BannerItem = {
@@ -71,13 +110,42 @@ export function PublicStoreView({
   slug,
   rootHref = `/loja/${slug}`,
   checkoutHref = `/loja/${slug}/checkout`,
+  serverData,
 }: PublicStoreViewProps) {
-  const store = useTenant((s) => s.stores.find((x) => x.slug === slug));
-  const allProducts = useTenant((s) => s.products);
-  const products = useMemo(
-    () => (store ? allProducts.filter((p) => p.storeId === store.id) : []),
-    [allProducts, store],
-  );
+  const zustandStore = useTenant((s) => s.stores.find((x) => x.slug === slug));
+  const allZustandProducts = useTenant((s) => s.products);
+
+  // Prefer server data over local IndexedDB
+  const store = serverData?.store ?? zustandStore;
+  const storeBanners = (store as { banners?: { imageUrl: string; title: string; subtitle: string; autoAdvanceSeconds: number }[] } | undefined)?.banners;
+
+  const products = useMemo<Product[]>(() => {
+    if (serverData) {
+      return serverData.products
+        .filter((p) => p.active !== false)
+        .map((p) => ({
+          id: p.id,
+          storeId: p.storeId,
+          code: p.code,
+          name: p.name,
+          description: p.description,
+          price: p.price / 100, // cents → BRL
+          stock: p.stock,
+          unit: p.unit,
+          minStock: p.minStock,
+          category: p.category,
+          image: p.imageUrl ?? "",
+          imageUrl: p.imageUrl ?? "",
+          images: Array.isArray(p.images) ? (p.images as string[]) : [],
+          active: p.active,
+          featured: p.featured,
+          onPromotion: p.onPromotion,
+          promotionPrice: p.promotionPrice ? p.promotionPrice / 100 : undefined,
+          variations: Array.isArray(p.variations) ? (p.variations as Product["variations"]) : [],
+        }));
+    }
+    return zustandStore ? allZustandProducts.filter((p) => p.storeId === zustandStore.id) : [];
+  }, [serverData, zustandStore, allZustandProducts]);
 
   const cartRaw = useCart((c) => c.carts[slug]);
   const cart = cartRaw ?? EMPTY_CART;
@@ -91,7 +159,7 @@ export function PublicStoreView({
   const [openCart, setOpenCart] = useState(false);
 
   const banners = useMemo<BannerItem[]>(() => {
-    const configured = (store.banners ?? [])
+    const configured = (storeBanners ?? [])
       .slice(0, 3)
       .map((banner, index) => ({
         id: `store-banner-${index + 1}`,
@@ -107,7 +175,7 @@ export function PublicStoreView({
       .filter((banner) => banner.image);
 
     return configured;
-  }, [store.banners]);
+  }, [storeBanners]);
 
   useEffect(() => {
     if (bannerIndex <= banners.length - 1) return;
@@ -126,12 +194,12 @@ export function PublicStoreView({
   }, [bannerIndex, banners]);
 
   const locationLabel = useMemo(() => {
-    const city = store.addressInfo?.city?.trim();
-    const state = store.addressInfo?.state?.trim();
+    const city = store?.addressInfo?.city?.trim();
+    const state = store?.addressInfo?.state?.trim();
     if (city && state) return `${city}, ${state}`;
-    if (store.address?.trim()) return store.address;
+    if ((store as { address?: string } | undefined)?.address?.trim()) return (store as { address?: string }).address!;
     return "Endereco nao informado";
-  }, [store.address, store.addressInfo?.city, store.addressInfo?.state]);
+  }, [(store as { address?: string } | undefined)?.address, store?.addressInfo?.city, store?.addressInfo?.state]);
 
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
@@ -212,23 +280,6 @@ export function PublicStoreView({
       (s) => s.key === activeChip || s.title.toLowerCase() === activeChip,
     );
   }, [activeChip, categorySections]);
-
-  if (!store) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-6 text-center">
-        <div>
-          <h1 className="text-3xl font-black text-foreground">Loja nao encontrada</h1>
-          <p className="mt-2 text-sm text-muted-foreground">O link acessado nao existe.</p>
-          <Link
-            to="/"
-            className="mt-5 inline-flex rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground"
-          >
-            Voltar ao inicio
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#f4f5f7] text-foreground">

@@ -2,9 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { PlatformHeader } from "@/components/PlatformHeader";
 import { PublicStoreView } from "@/components/PublicStoreView";
-import { getStoreSlugFromHostname } from "@/lib/domain";
-import { createServerFn } from "@tanstack/react-start";
-import { getRequestHost } from "@tanstack/react-start/server";
+import { getStoreSlugFromWindowHost } from "@/lib/domain";
 import {
   Check,
   Package,
@@ -24,11 +22,6 @@ import {
 import heroImg from "@/assets/hero-entrepreneur.jpg";
 import dashboardImg from "@/assets/dashboard-preview.jpg";
 import productsImg from "@/assets/products-flatlay.jpg";
-
-const getStoreSlugFromRequest = createServerFn({ method: "GET" }).handler(() => {
-  const host = getRequestHost();
-  return { storeSlug: getStoreSlugFromHostname(host) };
-});
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -124,22 +117,18 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
-  loader: async () => {
-    const { storeSlug } = await getStoreSlugFromRequest();
-    return { storeSlug };
-  },
   component: Landing,
 });
 
 function Landing() {
-  const { storeSlug } = Route.useLoaderData();
+  const hostSlug = getStoreSlugFromWindowHost();
   const [pdvOn, setPdvOn] = useState<Record<string, boolean>>({});
-  if (storeSlug) {
+  if (hostSlug) {
     return (
       <PublicStoreView
-        slug={storeSlug}
+        slug={hostSlug}
         rootHref="/"
-        checkoutHref={`/loja/${storeSlug}/checkout`}
+        checkoutHref={`/loja/${hostSlug}/checkout`}
       />
     );
   }

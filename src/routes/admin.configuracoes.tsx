@@ -640,9 +640,9 @@ function SettingsPage() {
                   />
 
                   <label className="flex flex-col gap-1.5 text-sm">
-                    <span className="font-medium">Link da loja</span>
+                    <span className="font-medium">Subdominio da loja</span>
                     <div className="flex items-center rounded-md border border-input bg-background pl-3">
-                      <span className="text-sm text-muted-foreground">/loja/</span>
+                      <span className="text-sm text-muted-foreground">https://</span>
                       <input
                         value={form.slug}
                         onChange={(e) =>
@@ -653,6 +653,7 @@ function SettingsPage() {
                         }
                         className="flex-1 bg-transparent px-2 py-2 outline-none"
                       />
+                      <span className="pr-3 text-sm text-muted-foreground">.armazix.com.br</span>
                     </div>
                     {errors.slug && <span className="text-xs text-destructive">{errors.slug}</span>}
                   </label>
