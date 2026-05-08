@@ -4,10 +4,12 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import tsConfigPaths from "vite-tsconfig-paths";
 import { cloudflare } from "@cloudflare/vite-plugin";
+import { envInjectPlugin } from "./src/vite-plugins/env-inject";
 
 export default defineConfig({
 	plugins: [
 		tailwindcss(),
+		envInjectPlugin(),
 		cloudflare({ viteEnvironment: { name: "ssr" } }),
 		tanstackStart(),
 		react(),

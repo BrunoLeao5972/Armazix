@@ -121,11 +121,20 @@ type SignupInput = { name: string; email: string; password: string };
 export const signupFn = createServerFn({ method: "POST" })
   .inputValidator((data: SignupInput) => data)
   .handler(async ({ data }) => {
-    const parsed = z.object({
-      name: z.string().min(2).max(100),
-      email: z.string().email().max(254),
-      password: z.string().min(6).max(100),
-    }).parse(data);
+    let parsed;
+    try {
+      parsed = z.object({
+        name: z.string().min(2, "Nome deve ter no mínimo 2 caracteres").max(100, "Nome é muito longo"),
+        email: z.string().email("E-mail inválido").max(254, "E-mail é muito longo"),
+        password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres").max(100, "Senha é muito longa"),
+      }).parse(data);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const firstIssue = error.errors[0];
+        throw new Error(firstIssue.message);
+      }
+      throw error;
+    }
 
     const db = getDb();
 

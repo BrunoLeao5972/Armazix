@@ -4,6 +4,20 @@
   "compatibility_date": "2025-09-24",
   "compatibility_flags": ["nodejs_compat"],
   "main": "@tanstack/react-start/server-entry",
+  "routes": [
+    {
+      "pattern": "armazix.com.br/*",
+      "zone_name": "armazix.com.br"
+    },
+    {
+      "pattern": "www.armazix.com.br/*",
+      "zone_name": "armazix.com.br"
+    },
+    {
+      "pattern": "*.armazix.com.br/*",
+      "zone_name": "armazix.com.br"
+    }
+  ],
   "vars": {
     "APP_BASE_URL": "https://armazix.com.br"
   }
