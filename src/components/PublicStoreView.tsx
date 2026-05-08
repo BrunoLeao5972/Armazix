@@ -288,19 +288,19 @@ export function PublicStoreView({
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-center gap-2.5">
               <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-muted text-xs font-black uppercase">
-                {store.logoUrl ? (
+                {store?.logoUrl ? (
                   <img
-                    src={store.logoUrl}
-                    alt={`Logo ${store.name}`}
+                    src={store?.logoUrl}
+                    alt={`Logo ${store?.name}`}
                     className="h-full w-full object-cover"
                     loading="lazy"
                   />
                 ) : (
-                  store.name.slice(0, 2)
+                  store?.name?.slice(0, 2) ?? ""
                 )}
               </div>
               <div className="min-w-0">
-                <p className="truncate text-xl font-black leading-tight">{store.name}</p>
+                <p className="truncate text-xl font-black leading-tight">{store?.name}</p>
                 <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                   <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 font-semibold text-green-700">
                     <span className="h-1.5 w-1.5 rounded-full bg-green-600" /> Aberto
