@@ -1,26 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start-server";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PlatformHeader } from "@/components/PlatformHeader";
 import { PublicStoreView } from "@/components/PublicStoreView";
-import { getStoreSlugFromWindowHost, getStoreSlugFromHostname } from "@/lib/domain";
+import { getStoreSlugFromWindowHost } from "@/lib/domain";
 
-const detectStoreSlug = createServerFn({ method: "GET" }).handler(async () => {
-  try {
-    const request = getRequest();
-    console.log("[DEBUG] detectStoreSlug request:", request?.url);
-    if (request) {
-      const url = new URL(request.url);
-      const slug = getStoreSlugFromHostname(url.hostname);
-      console.log("[DEBUG] detectStoreSlug hostname:", url.hostname, "slug:", slug);
-      return slug;
-    }
-  } catch (e) {
-    console.error("[DEBUG] detectStoreSlug error:", e);
-  }
-  return null as string | null;
-});
 import {
   Check,
   Package,
@@ -42,12 +25,6 @@ import dashboardImg from "@/assets/dashboard-preview.jpg";
 import productsImg from "@/assets/products-flatlay.jpg";
 
 export const Route = createFileRoute("/")({
-  loader: async () => {
-    console.log("[DEBUG] loader / chamado");
-    const slug = await detectStoreSlug();
-    console.log("[DEBUG] loader / slug:", slug);
-    return { storeSlug: slug };
-  },
   head: () => ({
     meta: [
       { title: "Crie sua loja online grátis | Plataforma de e-commerce para lojistas | Armazix" },
@@ -144,22 +121,24 @@ export const Route = createFileRoute("/")({
   component: Landing,
 });
 
-function TestView({ slug }: { slug: string }) {
-  return (
-    <div className="min-h-screen bg-[#f4f5f7] p-8">
-      <h1 className="text-2xl font-black">Loja: {slug}</h1>
-      <p className="mt-4 text-muted-foreground">Teste de renderização básica.</p>
-    </div>
-  );
-}
-
 function Landing() {
-  const loaderData = Route.useLoaderData() as { storeSlug: string | null };
-  const clientSlug = typeof window !== "undefined" ? getStoreSlugFromWindowHost() : null;
-  const hostSlug = loaderData?.storeSlug ?? clientSlug;
+  const [mounted, setMounted] = useState(false);
+  const [hostSlug, setHostSlug] = useState<string | null>(null);
   const [pdvOn, setPdvOn] = useState<Record<string, boolean>>({});
-  if (hostSlug) {
-    return <TestView slug={hostSlug} />;
+
+  useEffect(() => {
+    setMounted(true);
+    setHostSlug(getStoreSlugFromWindowHost());
+  }, []);
+
+  if (mounted && hostSlug) {
+    return (
+      <PublicStoreView
+        slug={hostSlug}
+        rootHref="/"
+        checkoutHref={`/loja/${hostSlug}/checkout`}
+      />
+    );
   }
 
   const plans = [

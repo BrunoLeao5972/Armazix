@@ -8,6 +8,7 @@ import {
   selectOrdersOfStore,
   type Store,
 } from "@/lib/store";
+import { syncStoreToDbFn } from "@/lib/storeFns";
 import { useShallow } from "zustand/react/shallow";
 import { getPublicStoreUrl } from "@/lib/domain";
 import {
@@ -36,11 +37,6 @@ export const Route = createFileRoute("/admin")({
 
     const userId = useAuth.getState().currentUserId;
     if (!userId) throw redirect({ to: "/login" });
-
-    const storeFromState = selectStoreOfUser(userId);
-    if (!storeFromState) {
-      throw redirect({ to: "/onboarding" });
-    }
   },
   component: AdminLayout,
 });
@@ -71,6 +67,28 @@ function AdminLayout() {
     userId ? s.stores.find((x) => x.ownerId === userId)?.slug : null,
   );
   const path = useRouterState({ select: (s) => s.location.pathname });
+
+  useEffect(() => {
+    if (authHydrated && tenantHydrated && userId && storeId && storeName && storeSlug) {
+      // Sincronizar loja automaticamente com o servidor se ainda nao estiver la
+      syncStoreToDbFn({
+        data: {
+          name: storeName,
+          slug: storeSlug,
+          description: "",
+          ownerUserId: userId,
+        },
+      }).catch(() => {
+        // ignorar erros de sincronizacao silenciosa
+      });
+    }
+  }, [authHydrated, tenantHydrated, userId, storeId, storeName, storeSlug]);
+
+  useEffect(() => {
+    if (authHydrated && tenantHydrated && userId && !storeId) {
+      window.location.assign("/onboarding");
+    }
+  }, [authHydrated, tenantHydrated, userId, storeId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
