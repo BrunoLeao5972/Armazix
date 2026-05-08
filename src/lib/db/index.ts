@@ -9,10 +9,16 @@ export function getDb() {
 
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
-    throw new Error("DATABASE_URL nao configurada no servidor.");
+    console.error("DATABASE_URL nao configurada no servidor.");
+    throw new Error("Erro de conexão com banco de dados. Tente novamente mais tarde.");
   }
 
-  const sql = neon(databaseUrl);
-  cachedDb = drizzle(sql, { schema });
-  return cachedDb;
+  try {
+    const sql = neon(databaseUrl);
+    cachedDb = drizzle(sql, { schema });
+    return cachedDb;
+  } catch (error) {
+    console.error("Erro ao conectar ao banco de dados:", error);
+    throw new Error("Erro de conexão com banco de dados. Tente novamente mais tarde.");
+  }
 }
