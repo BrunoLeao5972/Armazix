@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import type { CreatePreferenceInput, PreferenceResult } from "@/lib/mercadopago";
 import { PDV_ADDON_PRICE, PLAN_NAMES, PLAN_PRICES, type Plan } from "@/lib/plans";
+import { getAppBaseUrl } from "@/lib/env";
 
 const PLAN_SET = new Set<Plan>(["free", "start", "pro", "full"]);
 const ORDER_REF_REGEX = /^order:[a-z0-9-]+:[a-z0-9-]+$/i;
@@ -36,9 +37,13 @@ function sanitizeItems(items: CreatePreferenceInput["items"]) {
 }
 
 function getBaseOrigin(input: CreatePreferenceInput): string {
-  const envBaseUrl = process.env.APP_BASE_URL?.trim();
-  if (envBaseUrl) {
-    return new URL(envBaseUrl).origin;
+  try {
+    const envBaseUrl = getAppBaseUrl();
+    if (envBaseUrl) {
+      return new URL(envBaseUrl).origin;
+    }
+  } catch {
+    // Fallback se getAppBaseUrl falhar
   }
 
   const success = new URL(input.backUrls.success);

@@ -1,8 +1,13 @@
-export function resolveAppOrigin(requestUrl?: string) {
-  const configuredBaseUrl = process.env.APP_BASE_URL?.trim();
+import { getAppBaseUrl } from "./env";
 
-  if (configuredBaseUrl) {
-    return new URL(configuredBaseUrl).origin;
+export function resolveAppOrigin(requestUrl?: string) {
+  try {
+    const configuredBaseUrl = getAppBaseUrl();
+    if (configuredBaseUrl) {
+      return new URL(configuredBaseUrl).origin;
+    }
+  } catch {
+    // Fallback se getAppBaseUrl falhar
   }
 
   if (requestUrl) {
