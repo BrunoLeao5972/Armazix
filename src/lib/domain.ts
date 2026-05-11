@@ -39,7 +39,7 @@ export function getPublicStoreUrl(slug: string): string {
     host === `www.${PLATFORM_DOMAIN}` ||
     getStoreSlugFromHostname(host)
   ) {
-    return `${protocol}//${slug}.${PLATFORM_DOMAIN}`;
+    return `${protocol}//${host}${hasPort}/loja/${slug}`;
   }
 
   if (LOCAL_HOSTS.has(host)) {
