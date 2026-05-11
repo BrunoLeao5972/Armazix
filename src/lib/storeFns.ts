@@ -83,11 +83,57 @@ function mapStorePayload(input: {
 }
 
 function isMissingSettingsColumnError(error: unknown) {
-  if (!(error instanceof Error)) return false;
-  const message = error.message.toLowerCase();
+  const messages: string[] = [];
+
+  const collectMessages = (value: unknown) => {
+    if (!value) return;
+
+    if (value instanceof Error) {
+      messages.push(value.message);
+      collectMessages((value as Error & { cause?: unknown }).cause);
+      return;
+    }
+
+    if (typeof value === "string") {
+      messages.push(value);
+      return;
+    }
+
+    if (typeof value === "object") {
+      const candidate = value as { message?: unknown; cause?: unknown; toString?: () => string };
+      if (typeof candidate.message === "string") {
+        messages.push(candidate.message);
+      }
+      if (typeof candidate.toString === "function") {
+        const rendered = candidate.toString();
+        if (rendered && rendered !== "[object Object]") {
+          messages.push(rendered);
+        }
+      }
+      if (candidate.cause) {
+        collectMessages(candidate.cause);
+      }
+    }
+  };
+
+  collectMessages(error);
+
+  const text = messages.join("\n").toLowerCase();
+
+  const hasSettingsToken =
+    text.includes("\"settings\"") ||
+    text.includes(" settings ") ||
+    text.includes("settings does") ||
+    text.includes("settings" );
+
+  if (!hasSettingsToken) return false;
+
   return (
-    message.includes("settings") &&
-    (message.includes("does not exist") || message.includes("nao existe"))
+    text.includes("does not exist") ||
+    text.includes("nao existe") ||
+    text.includes("unknown column") ||
+    text.includes("no such column") ||
+    text.includes("failed query")
   );
 }
 
