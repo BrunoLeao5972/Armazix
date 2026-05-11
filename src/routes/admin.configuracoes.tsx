@@ -2,14 +2,17 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ImageCropDialog } from "@/components/ImageCropDialog";
 import {
+  normalizeSlug,
   normalizeStore,
   type AddressInfo,
   type BusinessHour,
   type DeliveryFee,
   type PixKeyType,
   type StoreBanner,
+  useAuth,
   useTenant,
 } from "@/lib/store";
+import { upsertStoreSettingsFn } from "@/lib/storeFns";
 import { useCurrentStore } from "./admin";
 
 export const Route = createFileRoute("/admin/configuracoes")({
@@ -44,6 +47,7 @@ function SettingsPage() {
   const store = useMemo(() => normalizeStore(rawStore), [rawStore]);
   const updateStore = useTenant((s) => s.updateStore);
   const stores = useTenant((s) => s.stores);
+  const currentUserId = useAuth((s) => s.currentUserId);
   const [form, setForm] = useState(() => normalizeStore(rawStore));
   const [saved, setSaved] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -478,39 +482,79 @@ function SettingsPage() {
     return nextErrors;
   };
 
-  const save = (e: React.FormEvent) => {
+  const save = async (e: React.FormEvent) => {
     e.preventDefault();
     const validation = validate();
     setErrors(validation);
     if (Object.keys(validation).length > 0) return;
 
-    updateStore(store.id, {
+    const normalizedAddress = {
+      ...form.addressInfo,
+      cep: formatCep(form.addressInfo.cep),
+      state: form.addressInfo.state.toUpperCase(),
+    };
+    const normalizedPayments = {
+      ...form.payments,
+      card: form.payments.credit || form.payments.debit,
+    };
+    const normalizedDelivery = {
+      ...form.delivery,
+      fee: form.delivery.fees[0]?.fee ?? form.delivery.fee,
+    };
+    const normalizedSlug = slugify(form.slug);
+    const normalizedPhones = form.phones.filter((p) => p.trim().length > 0);
+
+    const localPatch = {
       name: form.name,
       logoUrl: form.logoUrl,
       banners: form.banners,
-      slug: slugify(form.slug),
+      slug: normalizedSlug,
       taxId: form.taxId,
       cnpj: form.taxId,
-      address: buildAddressLabel(form.addressInfo),
-      addressInfo: {
-        ...form.addressInfo,
-        cep: formatCep(form.addressInfo.cep),
-        state: form.addressInfo.state.toUpperCase(),
-      },
+      address: buildAddressLabel(normalizedAddress),
+      addressInfo: normalizedAddress,
       description: form.description,
       businessHours: form.businessHours,
-      phones: form.phones.filter((p) => p.trim().length > 0),
-      whatsapp: form.phones.find((p) => p.trim().length > 0) ?? "",
-      delivery: {
-        ...form.delivery,
-        fee: form.delivery.fees[0]?.fee ?? form.delivery.fee,
-      },
-      payments: {
-        ...form.payments,
-        card: form.payments.credit || form.payments.debit,
-      },
+      phones: normalizedPhones,
+      whatsapp: normalizedPhones[0] ?? "",
+      delivery: normalizedDelivery,
+      payments: normalizedPayments,
       pdvEnabled: form.pdvAccess ? form.pdvEnabled : false,
-    });
+    };
+
+    updateStore(store.id, localPatch);
+
+    if (currentUserId) {
+      try {
+        await upsertStoreSettingsFn({
+          data: {
+            storeId: store.id,
+            ownerUserId: currentUserId,
+            name: localPatch.name,
+            slug: localPatch.slug,
+            description: localPatch.description,
+            settings: {
+              logoUrl: localPatch.logoUrl,
+              banners: localPatch.banners,
+              taxId: localPatch.taxId,
+              cnpj: localPatch.cnpj,
+              address: localPatch.address,
+              addressInfo: localPatch.addressInfo,
+              businessHours: localPatch.businessHours,
+              phones: localPatch.phones,
+              whatsapp: localPatch.whatsapp,
+              categories: form.categories,
+              delivery: localPatch.delivery,
+              payments: localPatch.payments,
+              pdvEnabled: localPatch.pdvEnabled,
+            },
+          },
+        });
+      } catch {
+        // Keep local save successful even if remote sync fails.
+      }
+    }
+
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
   };
@@ -1405,12 +1449,7 @@ function buildAddressLabel(addressInfo: AddressInfo) {
 }
 
 function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
+  return normalizeSlug(value);
 }
 
 function getPixKeyPlaceholder(pixKeyType: PixKeyType) {

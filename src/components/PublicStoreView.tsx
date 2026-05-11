@@ -22,6 +22,7 @@ import {
   Truck,
   Store as StoreIcon,
   CreditCard,
+  Tags,
   X,
   Trash2,
 } from "lucide-react";
@@ -97,6 +98,8 @@ const CATEGORY_META: Record<string, { label: string; icon: React.ReactNode }> = 
   ofertas: { label: "Ofertas", icon: <Flame className="h-4 w-4" /> },
 };
 
+type UiTab = "inicio" | "sobre";
+
 const fallbackImages = [
   "https://images.unsplash.com/photo-1604719312566-8912e9227c6a?auto=format&fit=crop&q=80&w=1200",
   "https://images.unsplash.com/photo-1628557044797-f21a177c37ec?auto=format&fit=crop&q=80&w=1200",
@@ -155,6 +158,7 @@ export function PublicStoreView({
 
   const [query, setQuery] = useState("");
   const [activeChip, setActiveChip] = useState<string>("todos");
+  const [activeTab, setActiveTab] = useState<UiTab>("inicio");
   const [bannerIndex, setBannerIndex] = useState(0);
   const [openCart, setOpenCart] = useState(false);
 
@@ -202,6 +206,58 @@ export function PublicStoreView({
   }, [(store as { address?: string } | undefined)?.address, store?.addressInfo?.city, store?.addressInfo?.state]);
 
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+
+  const addressLabel = useMemo(() => {
+    const street = store?.addressInfo?.street?.trim();
+    const number = store?.addressInfo?.number?.trim();
+    const city = store?.addressInfo?.city?.trim();
+    const state = store?.addressInfo?.state?.trim();
+    const complement = store?.addressInfo?.complement?.trim();
+
+    const base = [street, number, city, state].filter(Boolean).join(", ");
+    if (base && complement) return `${base} - ${complement}`;
+    if (base) return base;
+
+    const fallbackAddress = (store as { address?: string } | undefined)?.address?.trim();
+    return fallbackAddress || "Endereco nao informado";
+  }, [
+    (store as { address?: string } | undefined)?.address,
+    store?.addressInfo?.street,
+    store?.addressInfo?.number,
+    store?.addressInfo?.city,
+    store?.addressInfo?.state,
+    store?.addressInfo?.complement,
+  ]);
+
+  const paymentMethods = useMemo(() => {
+    const methods: string[] = [];
+    if (store?.payments?.pix) methods.push("Pix");
+    if (store?.payments?.cash) methods.push("Dinheiro");
+    if (store?.payments?.credit) methods.push("Credito");
+    if (store?.payments?.debit) methods.push("Debito");
+    if (!methods.length && store?.payments?.card) methods.push("Cartao");
+    return methods;
+  }, [
+    store?.payments?.pix,
+    store?.payments?.cash,
+    store?.payments?.credit,
+    store?.payments?.debit,
+    store?.payments?.card,
+  ]);
+
+  const businessHoursList = useMemo(() => {
+    if (!Array.isArray(store?.businessHours)) return [];
+
+    return store.businessHours.map((hour) => {
+      if (hour.closed) return `${hour.day}: Fechado`;
+
+      const breakLabel = hour.hasBreak
+        ? ` (intervalo ${hour.breakStart} as ${hour.breakEnd})`
+        : "";
+
+      return `${hour.day}: ${hour.open} as ${hour.close}${breakLabel}`;
+    });
+  }, [store?.businessHours]);
 
   const cartQtyById = useMemo(() => {
     const map = new Map<string, number>();
@@ -280,6 +336,16 @@ export function PublicStoreView({
       (s) => s.key === activeChip || s.title.toLowerCase() === activeChip,
     );
   }, [activeChip, categorySections]);
+
+  const categoryChips = useMemo(() => {
+    const keys = new Set<string>();
+    for (const section of categorySections) {
+      if (section.key !== "ofertas" && section.key !== "mais-vendidos") {
+        keys.add(section.key);
+      }
+    }
+    return Array.from(keys);
+  }, [categorySections]);
 
   return (
     <div className="min-h-screen bg-[#f4f5f7] text-foreground">
@@ -377,6 +443,61 @@ export function PublicStoreView({
         )}
 
         <section className="mt-4">
+          <div className="mb-3 flex items-center gap-2">
+            <button
+              onClick={() => setActiveTab("inicio")}
+              className={`rounded-full px-4 py-2 text-sm font-bold transition ${
+                activeTab === "inicio"
+                  ? "bg-slate-900 text-white"
+                  : "bg-white text-slate-700 hover:bg-slate-100"
+              }`}
+            >
+              Inicio
+            </button>
+            <button
+              onClick={() => setActiveTab("sobre")}
+              className={`rounded-full px-4 py-2 text-sm font-bold transition ${
+                activeTab === "sobre"
+                  ? "bg-slate-900 text-white"
+                  : "bg-white text-slate-700 hover:bg-slate-100"
+              }`}
+            >
+              Sobre
+            </button>
+          </div>
+
+          {activeTab === "sobre" && (
+            <section className="space-y-3 rounded-3xl border border-border/60 bg-white p-4 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.25)]">
+              <h3 className="text-xl font-black text-slate-900">Sobre o estabelecimento</h3>
+              <p className="text-sm text-slate-600">{store?.description?.trim() || "Sem descricao cadastrada."}</p>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <article className="rounded-2xl border border-border bg-slate-50 p-3">
+                  <p className="text-xs font-black uppercase tracking-wide text-slate-500">Endereco</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-800">{addressLabel}</p>
+                </article>
+                <article className="rounded-2xl border border-border bg-slate-50 p-3">
+                  <p className="text-xs font-black uppercase tracking-wide text-slate-500">Formas de pagamento</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-800">
+                    {paymentMethods.length ? paymentMethods.join(" • ") : "Nao informado"}
+                  </p>
+                </article>
+              </div>
+
+              <article className="rounded-2xl border border-border bg-slate-50 p-3">
+                <p className="text-xs font-black uppercase tracking-wide text-slate-500">Horario de funcionamento</p>
+                <div className="mt-2 space-y-1 text-sm text-slate-700">
+                  {businessHoursList.length ? (
+                    businessHoursList.map((line) => <p key={line}>{line}</p>)
+                  ) : (
+                    <p>Nao informado</p>
+                  )}
+                </div>
+              </article>
+            </section>
+          )}
+
+          {activeTab === "inicio" && (
           <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <Chip
               active={activeChip === "todos"}
@@ -384,7 +505,13 @@ export function PublicStoreView({
               icon={<StoreIcon className="h-4 w-4" />}
               label="Todos"
             />
-            {Object.entries(CATEGORY_META).map(([key, meta]) => (
+            {categoryChips.map((key) => {
+              const meta = CATEGORY_META[key] ?? {
+                label: key.charAt(0).toUpperCase() + key.slice(1),
+                icon: <Tags className="h-4 w-4" />,
+              };
+
+              return (
               <Chip
                 key={key}
                 active={activeChip === key}
@@ -392,8 +519,10 @@ export function PublicStoreView({
                 icon={meta.icon}
                 label={meta.label}
               />
-            ))}
+              );
+            })}
           </div>
+          )}
         </section>
 
         <section className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -403,30 +532,65 @@ export function PublicStoreView({
           <BenefitCard icon={<CreditCard className="h-5 w-5 text-amber-600" />} title="Pagamento Facil" subtitle="Varias opcoes" />
         </section>
 
-        <main className="mt-7 space-y-7">
-          {visibleSections.map((section) => (
-            <ShowcaseRow
-              key={section.key}
-              title={section.title}
-              emoji={section.emoji}
-              products={section.products}
-              slug={slug}
-              add={add}
-              setQty={setQty}
-              remove={remove}
-              cartQtyById={cartQtyById}
-            />
-          ))}
-        </main>
+        {activeTab === "inicio" && (
+          <main className="mt-7 space-y-7">
+            {visibleSections.map((section) => (
+              <ShowcaseRow
+                key={section.key}
+                title={section.title}
+                emoji={section.emoji}
+                products={section.products}
+                slug={slug}
+                add={add}
+                setQty={setQty}
+                remove={remove}
+                cartQtyById={cartQtyById}
+              />
+            ))}
+
+            {visibleSections.length === 0 && (
+              <section className="rounded-3xl border border-dashed border-border bg-white p-8 text-center">
+                <p className="text-lg font-bold text-slate-900">Nenhum item encontrado</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Ajuste os filtros ou tente outra busca para visualizar os produtos da loja.
+                </p>
+              </section>
+            )}
+          </main>
+        )}
+
+        <footer className="mt-8 rounded-3xl border border-border/60 bg-white p-5 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.25)]">
+          <p className="text-sm font-black uppercase tracking-wide text-slate-500">Informacoes do estabelecimento</p>
+          <div className="mt-3 grid gap-3 md:grid-cols-3">
+            <article className="rounded-2xl bg-slate-50 p-3">
+              <p className="text-xs font-black uppercase tracking-wide text-slate-500">Endereco</p>
+              <p className="mt-1 text-sm font-semibold text-slate-800">{addressLabel}</p>
+            </article>
+            <article className="rounded-2xl bg-slate-50 p-3">
+              <p className="text-xs font-black uppercase tracking-wide text-slate-500">Horario</p>
+              <p className="mt-1 text-sm font-semibold text-slate-800">
+                {businessHoursList[0] ?? "Nao informado"}
+              </p>
+            </article>
+            <article className="rounded-2xl bg-slate-50 p-3">
+              <p className="text-xs font-black uppercase tracking-wide text-slate-500">Pagamentos</p>
+              <p className="mt-1 text-sm font-semibold text-slate-800">
+                {paymentMethods.length ? paymentMethods.join(" • ") : "Nao informado"}
+              </p>
+            </article>
+          </div>
+        </footer>
       </div>
 
-      <button
-        onClick={() => setOpenCart(true)}
-        className="fixed bottom-4 right-4 z-50 inline-flex items-center gap-2 rounded-full bg-orange-500 px-4 py-3 text-sm font-black text-white shadow-[0_14px_34px_-12px_rgba(249,115,22,0.8)] transition-transform hover:scale-[1.03]"
-      >
-        <ShoppingCart className="h-4 w-4" />
-        {cartCount}
-      </button>
+      {activeTab === "inicio" && (
+        <button
+          onClick={() => setOpenCart(true)}
+          className="fixed bottom-4 right-4 z-50 inline-flex items-center gap-2 rounded-full bg-orange-500 px-4 py-3 text-sm font-black text-white shadow-[0_14px_34px_-12px_rgba(249,115,22,0.8)] transition-transform hover:scale-[1.03]"
+        >
+          <ShoppingCart className="h-4 w-4" />
+          {cartCount}
+        </button>
+      )}
 
       {openCart && (
         <CartDrawer
@@ -528,6 +692,7 @@ function ShowcaseRow({
             key={product.id}
             product={product}
             image={product.imageUrl || fallbackImages[idx % fallbackImages.length]}
+            productHref={`/loja/${slug}/produto/${product.id}`}
             qty={cartQtyById.get(product.id) ?? 0}
             onAdd={() =>
               add(slug, {
@@ -553,6 +718,7 @@ function ShowcaseRow({
 function ProductCard({
   product,
   image,
+  productHref,
   qty,
   onAdd,
   onIncrease,
@@ -560,6 +726,7 @@ function ProductCard({
 }: {
   product: Product;
   image: string;
+  productHref: string;
   qty: number;
   onAdd: () => void;
   onIncrease: () => void;
@@ -573,7 +740,19 @@ function ProductCard({
     : 0;
 
   return (
-    <article className="w-[190px] shrink-0 snap-start overflow-hidden rounded-3xl border border-border/70 bg-white shadow-[0_10px_24px_-14px_rgba(0,0,0,0.45)] transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_26px_-12px_rgba(0,0,0,0.35)] sm:w-[205px]">
+    <article
+      className="w-[190px] shrink-0 snap-start overflow-hidden rounded-3xl border border-border/70 bg-white shadow-[0_10px_24px_-14px_rgba(0,0,0,0.45)] transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_26px_-12px_rgba(0,0,0,0.35)] sm:w-[205px]"
+      role="button"
+      tabIndex={0}
+      onClick={() => window.open(productHref, "_blank", "noopener,noreferrer")}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          window.open(productHref, "_blank", "noopener,noreferrer");
+        }
+      }}
+      aria-label={`Abrir detalhes de ${product.name}`}
+    >
       <div className="relative h-48 overflow-hidden bg-slate-100">
         <img src={image} alt={product.name} loading="lazy" className="h-full w-full object-cover" />
         {hasDiscount && (
@@ -589,20 +768,32 @@ function ProductCard({
       </div>
       <div className="space-y-2 p-4">
         <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{product.category || "Produtos"}</p>
-        <h4 className="line-clamp-2 min-h-[58px] text-[33px] leading-[1.15] font-black text-slate-900 sm:text-[35px]">{product.name}</h4>
-        <p className="text-sm text-slate-500">{product.unit || "Unidade"}</p>
+        <h4 className="line-clamp-2 min-h-[48px] text-lg leading-[1.2] font-black text-slate-900">{product.name}</h4>
+        <p className="line-clamp-2 text-xs text-slate-500">{product.description || product.unit || "Unidade"}</p>
 
         <div className="flex items-end justify-between gap-2 pt-1">
           <div>
-            <p className="text-4xl font-black text-slate-900">{formatBRL(finalPrice)}</p>
+            <p className="text-3xl font-black text-slate-900">{formatBRL(finalPrice)}</p>
             {hasDiscount && (
               <p className="text-sm text-slate-400 line-through">{formatBRL(product.price)}</p>
             )}
+            <a
+              href={productHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1 inline-block text-xs font-bold text-orange-600 hover:underline"
+              onClick={(event) => event.stopPropagation()}
+            >
+              Ver detalhes
+            </a>
           </div>
 
           {qty <= 0 ? (
             <button
-              onClick={onAdd}
+              onClick={(event) => {
+                event.stopPropagation();
+                onAdd();
+              }}
               className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-[0_10px_24px_-12px_rgba(249,115,22,0.9)] transition-transform hover:scale-105"
               aria-label="Adicionar item"
             >
@@ -611,7 +802,10 @@ function ProductCard({
           ) : (
             <div className="inline-flex items-center gap-1 rounded-2xl border border-orange-200 bg-orange-50 p-1">
               <button
-                onClick={onDecrease}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onDecrease();
+                }}
                 className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-orange-700 hover:bg-orange-100"
                 aria-label="Diminuir"
               >
@@ -619,7 +813,10 @@ function ProductCard({
               </button>
               <span className="w-7 text-center text-sm font-black text-orange-700">{qty}</span>
               <button
-                onClick={onIncrease}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onIncrease();
+                }}
                 className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-orange-700 hover:bg-orange-100"
                 aria-label="Aumentar"
               >

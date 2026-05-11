@@ -114,9 +114,41 @@ Aplicar isolamento por `store_id` em tabelas de negocio e configurar politicas R
 ## Comandos uteis
 
 - Desenvolvimento: `bun run dev`
+- Desenvolvimento em modo staging: `bun run dev:staging`
 - Build de validacao: `bun run build`
+- Build staging: `bun run build:staging`
+- Deploy producao: `bun run deploy:prod`
+- Deploy pre-producao: `bun run deploy:staging`
 - Lint: `bun run lint`
 - Formatacao: `bun run format`
+
+## Ambiente de pre-producao (staging)
+
+O projeto suporta um ambiente separado chamado `staging` no arquivo `wrangler.jsonc`.
+
+- Producao continua no worker principal (`armazix`) e nas rotas de `armazix.com.br`.
+- Staging usa worker separado (`armazix-staging`) para evitar impacto no ambiente principal.
+- O banco pode ser o mesmo da producao, desde que as variaveis/secrets sejam configuradas para o ambiente `staging`.
+
+### Configuracao recomendada
+
+0. Prepare o arquivo de ambiente local para staging:
+  - Copie `.env.staging.example` para `.env.staging`
+  - Ajuste os valores antes de rodar `bun run dev:staging` ou `bun run build:staging`
+1. Defina os mesmos secrets sensiveis nos dois ambientes:
+  - `wrangler secret put DATABASE_URL`
+  - `wrangler secret put RESEND_API_KEY`
+  - `wrangler secret put EMAIL_FROM`
+2. Repita para staging:
+  - `wrangler secret put DATABASE_URL --env staging`
+  - `wrangler secret put RESEND_API_KEY --env staging`
+  - `wrangler secret put EMAIL_FROM --env staging`
+3. Ajuste `APP_BASE_URL` de staging em `wrangler.jsonc` para seu dominio de pre-producao.
+4. Execute o deploy de staging com `bun run deploy:staging`.
+
+### Observacao importante
+
+Usar o mesmo banco em dois ambientes evita migracoes duplicadas, mas exige cuidado: qualquer alteracao estrutural (migracao, script manual ou cleanup) impacta os dois ambientes.
 
 ## Proximos passos recomendados
 

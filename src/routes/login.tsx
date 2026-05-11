@@ -1,7 +1,8 @@
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useAuth, selectStoreOfUser } from "@/lib/store";
+import { useAuth, useTenant } from "@/lib/store";
 import { loginFn } from "@/lib/authFns";
+import { getStoreByOwnerFn } from "@/lib/storeFns";
 import { PlatformHeader } from "@/components/PlatformHeader";
 import { 
   ArrowRight, 
@@ -35,6 +36,7 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const navigate = useNavigate();
   const setSession = useAuth((s) => s.setSession);
+  const upsertStoreFromServer = useTenant((s) => s.upsertStoreFromServer);
   const [form, setForm] = useState({ email: "", password: "" });
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
@@ -47,8 +49,25 @@ function LoginPage() {
     try {
       const result = await loginFn({ data: form });
       setSession(result.userId, result.name, result.sessionToken);
-      const store = selectStoreOfUser(result.userId);
-      navigate({ to: store ? "/admin" : "/onboarding" });
+
+      const serverStore = await getStoreByOwnerFn({ data: result.userId });
+
+      if (serverStore) {
+        upsertStoreFromServer({
+          id: serverStore.id,
+          ownerUserId: serverStore.ownerUserId,
+          name: serverStore.name,
+          slug: serverStore.slug,
+          description: serverStore.description,
+          plan: serverStore.plan,
+          pdvAccess: serverStore.pdvAccess,
+          pdvEnabled: serverStore.pdvEnabled,
+          settings: serverStore.settings,
+        });
+        navigate({ to: "/admin" });
+      } else {
+        navigate({ to: "/onboarding" });
+      }
     } catch (error) {
       setErr(error instanceof Error ? error.message : "Credenciais inválidas");
       setLoading(false);

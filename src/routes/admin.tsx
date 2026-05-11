@@ -8,7 +8,7 @@ import {
   selectOrdersOfStore,
   type Store,
 } from "@/lib/store";
-import { syncStoreToDbFn } from "@/lib/storeFns";
+import { getStoreByOwnerFn, syncStoreToDbFn } from "@/lib/storeFns";
 import { useShallow } from "zustand/react/shallow";
 import { getPublicStoreUrl } from "@/lib/domain";
 import {
@@ -48,6 +48,8 @@ function AdminLayout() {
   const tenantHydrated = useTenant.persist?.hasHydrated() ?? true;
   const userId = useAuth((s) => s.currentUserId);
   const logout = useAuth((s) => s.logout);
+  const upsertStoreFromServer = useTenant((s) => s.upsertStoreFromServer);
+  const [serverStoreChecked, setServerStoreChecked] = useState(false);
   const handleLogout = () => {
     logout();
     window.location.assign("/login");
@@ -69,6 +71,42 @@ function AdminLayout() {
   const path = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
+    if (!authHydrated || !tenantHydrated || !userId || serverStoreChecked) return;
+
+    let cancelled = false;
+
+    void getStoreByOwnerFn({ data: userId })
+      .then((serverStore) => {
+        if (cancelled || !serverStore) return;
+
+        upsertStoreFromServer({
+          id: serverStore.id,
+          ownerUserId: serverStore.ownerUserId,
+          name: serverStore.name,
+          slug: serverStore.slug,
+          description: serverStore.description,
+          plan: serverStore.plan,
+          pdvAccess: serverStore.pdvAccess,
+          pdvEnabled: serverStore.pdvEnabled,
+          settings: serverStore.settings,
+        });
+      })
+      .finally(() => {
+        if (!cancelled) setServerStoreChecked(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    authHydrated,
+    tenantHydrated,
+    userId,
+    serverStoreChecked,
+    upsertStoreFromServer,
+  ]);
+
+  useEffect(() => {
     if (authHydrated && tenantHydrated && userId && storeId && storeName && storeSlug) {
       // Sincronizar loja automaticamente com o servidor se ainda nao estiver la
       syncStoreToDbFn({
@@ -85,10 +123,10 @@ function AdminLayout() {
   }, [authHydrated, tenantHydrated, userId, storeId, storeName, storeSlug]);
 
   useEffect(() => {
-    if (authHydrated && tenantHydrated && userId && !storeId) {
+    if (authHydrated && tenantHydrated && serverStoreChecked && userId && !storeId) {
       window.location.assign("/onboarding");
     }
-  }, [authHydrated, tenantHydrated, userId, storeId]);
+  }, [authHydrated, tenantHydrated, serverStoreChecked, userId, storeId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

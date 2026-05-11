@@ -8,8 +8,13 @@ import type { Plugin } from "vite";
  * como constantes no código do servidor
  */
 export function envInjectPlugin(): Plugin {
+  let mode = "development";
+
   return {
     name: "env-inject",
+    configResolved(config) {
+      mode = config.mode;
+    },
     resolveId(id) {
       if (id === "virtual:server-env") {
         return id;
@@ -17,13 +22,21 @@ export function envInjectPlugin(): Plugin {
     },
     load(id) {
       if (id === "virtual:server-env") {
-        // Carregar .env
-        const envPath = path.resolve(process.cwd(), ".env");
-        let envVars: Record<string, string> = {};
+        // Repete a mesma precedencia de arquivos .env do Vite
+        const root = process.cwd();
+        const envFiles = [
+          ".env",
+          ".env.local",
+          `.env.${mode}`,
+          `.env.${mode}.local`,
+        ];
 
-        if (fs.existsSync(envPath)) {
+        const envVars: Record<string, string> = {};
+        for (const file of envFiles) {
+          const envPath = path.resolve(root, file);
+          if (!fs.existsSync(envPath)) continue;
           const envContent = fs.readFileSync(envPath, "utf-8");
-          envVars = dotenv.parse(envContent);
+          Object.assign(envVars, dotenv.parse(envContent));
         }
 
         // Gerar código que exporta as variáveis (apenas se existirem no .env)

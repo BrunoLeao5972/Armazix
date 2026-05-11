@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { PlatformHeader } from "@/components/PlatformHeader";
-import { useAuth, useTenant, selectStoreOfUser } from "@/lib/store";
+import { normalizeSlug, useAuth, useTenant, selectStoreOfUser } from "@/lib/store";
 import { createStoreFn } from "@/lib/storeFns";
 
 export const Route = createFileRoute("/onboarding")({
@@ -27,8 +27,7 @@ function OnboardingPage() {
   const [form, setForm] = useState({ name: "", slug: "", description: "" });
   const [err, setErr] = useState("");
 
-  const slugify = (v: string) =>
-    v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const slugify = (v: string) => normalizeSlug(v);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

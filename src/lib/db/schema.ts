@@ -94,6 +94,7 @@ export const stores = pgTable(
     name: text("name").notNull(),
     slug: text("slug").notNull(),
     description: text("description").default("").notNull(),
+    settings: jsonb("settings").default({}).notNull(),
     plan: text("plan").default("free").notNull(),
     pdvAccess: boolean("pdv_access").default(false).notNull(),
     pdvEnabled: boolean("pdv_enabled").default(false).notNull(),

@@ -20,5 +20,14 @@
   ],
   "vars": {
     "APP_BASE_URL": "https://armazix.com.br"
+  },
+  "env": {
+    "staging": {
+      "name": "armazix-staging",
+      "workers_dev": true,
+      "vars": {
+        "APP_BASE_URL": "https://staging.armazix.com.br"
+      }
+    }
   }
 }

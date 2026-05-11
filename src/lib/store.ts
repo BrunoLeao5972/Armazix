@@ -197,6 +197,14 @@ export type StoreBanner = {
   autoAdvanceSeconds: number;
 };
 
+export function normalizeSlug(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "");
+}
+
 export type Store = {
   id: string;
   ownerId: string;
@@ -559,6 +567,17 @@ type TenantState = {
   customers: Customer[];
   paymentMethods: PaymentMethod[];
   storeUsers: StoreUser[];
+  upsertStoreFromServer: (data: {
+    id: string;
+    ownerUserId: string;
+    name: string;
+    slug: string;
+    description: string;
+    plan?: string | null;
+    pdvAccess?: boolean | null;
+    pdvEnabled?: boolean | null;
+    settings?: unknown;
+  }) => void;
   createStore: (
     ownerId: string,
     data: { name: string; slug: string; description: string },
@@ -598,13 +617,77 @@ export const useTenant = create<TenantState>()(
       customers: [],
       paymentMethods: [],
       storeUsers: [],
+      upsertStoreFromServer: (data) => {
+        const cleanSlug = normalizeSlug(data.slug);
+        if (!cleanSlug) return;
+
+        const defaultStore: Store = {
+          id: data.id,
+          ownerId: data.ownerUserId,
+          name: data.name,
+          logoUrl: "",
+          banners: [],
+          slug: cleanSlug,
+          taxId: "",
+          cnpj: "",
+          address: "",
+          addressInfo: { ...DEFAULT_ADDRESS_INFO },
+          description: data.description ?? "",
+          businessHours: DEFAULT_BUSINESS_HOURS.map((h) => ({ ...h })),
+          phones: [""],
+          whatsapp: "",
+          categories: [],
+          delivery: {
+            pickup: true,
+            localDelivery: false,
+            fee: 0,
+            fees: DEFAULT_DELIVERY_FEES.map((f) => ({ ...f })),
+          },
+          payments: {
+            pix: true,
+            card: true,
+            cash: false,
+            credit: true,
+            debit: true,
+            pixKeyType: "random",
+            pixBank: "",
+            pixKey: "",
+            pixReceiverName: "",
+            pixReceiverDocument: "",
+            pixQrCode: "",
+          },
+          plan: (data.plan as Plan) ?? "free",
+          pdvAccess: Boolean(data.pdvAccess),
+          pdvEnabled: Boolean(data.pdvEnabled),
+          createdAt: Date.now(),
+        };
+
+        const settingsPatch =
+          data.settings && typeof data.settings === "object"
+            ? (data.settings as Partial<Store>)
+            : {};
+
+        const merged = normalizeStore({
+          ...defaultStore,
+          ...settingsPatch,
+          id: data.id,
+          ownerId: data.ownerUserId,
+          name: data.name,
+          slug: cleanSlug,
+          description: data.description ?? defaultStore.description,
+          plan: (data.plan as Plan) ?? defaultStore.plan,
+          pdvAccess: data.pdvAccess ?? defaultStore.pdvAccess,
+          pdvEnabled: data.pdvEnabled ?? defaultStore.pdvEnabled,
+        });
+
+        set({
+          stores: get().stores.some((s) => s.id === data.id)
+            ? get().stores.map((s) => (s.id === data.id ? merged : s))
+            : [...get().stores, merged],
+        });
+      },
       createStore: (ownerId, { name, slug, description }) => {
-        const cleanSlug = slug
-          .toLowerCase()
-          .trim()
-          .replace(/[^a-z0-9-]/g, "-")
-          .replace(/-+/g, "-")
-          .replace(/^-|-$/g, "");
+        const cleanSlug = normalizeSlug(slug);
         if (!cleanSlug) return { ok: false, error: "Slug inválido" };
         if (get().stores.find((s) => s.slug === cleanSlug))
           return { ok: false, error: "Slug já em uso" };

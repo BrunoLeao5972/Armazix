@@ -9,10 +9,12 @@
 import { SERVER_ENV } from "virtual:server-env";
 
 function getEnv(key: string): string | undefined {
-  // 1. Tenta variáveis injetadas pelo plugin Vite (production)
-  if (SERVER_ENV && SERVER_ENV[key]) {
-    console.log(`[env] ✓ ${key} encontrado em SERVER_ENV`);
-    return SERVER_ENV[key];
+  // 1. Tenta globalThis.env (Cloudflare runtime bindings)
+  const globalEnv = (globalThis as any).env;
+  if (globalEnv && typeof globalEnv === "object" && globalEnv[key]) {
+    const value = globalEnv[key];
+    console.log(`[env] ✓ ${key} encontrado em globalThis.env`);
+    return value;
   }
 
   // 2. Tenta process.env (dev/local)
@@ -22,12 +24,10 @@ function getEnv(key: string): string | undefined {
     return value;
   }
 
-  // 3. Tenta globalThis.env (Cloudflare fallback)
-  const globalEnv = (globalThis as any).env;
-  if (globalEnv && typeof globalEnv === "object" && globalEnv[key]) {
-    const value = globalEnv[key];
-    console.log(`[env] ✓ ${key} encontrado em globalThis.env`);
-    return value;
+  // 3. Tenta variáveis injetadas no build (fallback)
+  if (SERVER_ENV && SERVER_ENV[key]) {
+    console.log(`[env] ✓ ${key} encontrado em SERVER_ENV`);
+    return SERVER_ENV[key];
   }
 
   console.warn(`[env] ✗ ${key} não encontrado`);
