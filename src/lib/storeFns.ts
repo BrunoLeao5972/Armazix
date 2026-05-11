@@ -6,8 +6,90 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getDb } from "./db";
 import { stores } from "./db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
+
+type JsonPrimitive = string | number | boolean | null;
+type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
+type SerializableSettings = Record<string, JsonValue>;
+
+type StorePayload = {
+  id: string;
+  ownerUserId: string;
+  name: string;
+  slug: string;
+  description: string;
+  plan: string;
+  pdvAccess: boolean;
+  pdvEnabled: boolean;
+  settings: SerializableSettings;
+};
+
+function toSerializableJsonValue(value: unknown): JsonValue {
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => toSerializableJsonValue(item));
+  }
+
+  if (value && typeof value === "object") {
+    const out: { [key: string]: JsonValue } = {};
+    for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+      out[key] = toSerializableJsonValue(item);
+    }
+    return out;
+  }
+
+  return String(value);
+}
+
+function toSerializableSettings(value: unknown): SerializableSettings {
+  const jsonValue = toSerializableJsonValue(value);
+  if (jsonValue && typeof jsonValue === "object" && !Array.isArray(jsonValue)) {
+    return jsonValue as SerializableSettings;
+  }
+  return {};
+}
+
+function mapStorePayload(input: {
+  id: string;
+  ownerUserId: string;
+  name: string;
+  slug: string;
+  description: string;
+  plan: string;
+  pdvAccess: boolean;
+  pdvEnabled: boolean;
+  settings: unknown;
+}): StorePayload {
+  return {
+    id: input.id,
+    ownerUserId: input.ownerUserId,
+    name: input.name,
+    slug: input.slug,
+    description: input.description,
+    plan: input.plan,
+    pdvAccess: input.pdvAccess,
+    pdvEnabled: input.pdvEnabled,
+    settings: toSerializableSettings(input.settings),
+  };
+}
+
+function isMissingSettingsColumnError(error: unknown) {
+  if (!(error instanceof Error)) return false;
+  const message = error.message.toLowerCase();
+  return (
+    message.includes("settings") &&
+    (message.includes("does not exist") || message.includes("nao existe"))
+  );
+}
 
 export const createStoreFn = createServerFn({ method: "POST" })
   .inputValidator(
@@ -45,26 +127,68 @@ export const createStoreFn = createServerFn({ method: "POST" })
       throw new Error("Slug já em uso");
     }
 
-    const [store] = await db
-      .insert(stores)
-      .values({
-        name: parsed.name.trim(),
-        slug: parsed.slug,
-        description: parsed.description.trim(),
+    let store: StorePayload | undefined;
+
+    try {
+      const [created] = await db
+        .insert(stores)
+        .values({
+          name: parsed.name.trim(),
+          slug: parsed.slug,
+          description: parsed.description.trim(),
+          settings: {},
+          ownerUserId: parsed.ownerUserId,
+        })
+        .returning({
+          id: stores.id,
+          name: stores.name,
+          slug: stores.slug,
+          description: stores.description,
+          ownerUserId: stores.ownerUserId,
+          plan: stores.plan,
+          pdvAccess: stores.pdvAccess,
+          pdvEnabled: stores.pdvEnabled,
+          settings: stores.settings,
+        });
+      if (created) {
+        store = mapStorePayload(created);
+      }
+    } catch (error) {
+      if (!isMissingSettingsColumnError(error)) throw error;
+
+      const fallback = await db.execute(sql`
+        insert into stores (name, slug, description, owner_user_id)
+        values (${parsed.name.trim()}, ${parsed.slug}, ${parsed.description.trim()}, ${parsed.ownerUserId})
+        returning id, owner_user_id, name, slug, description, plan, pdv_access, pdv_enabled
+      `);
+
+      const row = fallback.rows[0] as {
+        id: string;
+        owner_user_id: string;
+        name: string;
+        slug: string;
+        description: string;
+        plan: string;
+        pdv_access: boolean;
+        pdv_enabled: boolean;
+      } | undefined;
+
+      if (!row) {
+        throw new Error("Falha ao criar loja");
+      }
+
+      store = {
+        id: row.id,
+        ownerUserId: row.owner_user_id,
+        name: row.name,
+        slug: row.slug,
+        description: row.description,
+        plan: row.plan,
+        pdvAccess: row.pdv_access,
+        pdvEnabled: row.pdv_enabled,
         settings: {},
-        ownerUserId: parsed.ownerUserId,
-      })
-      .returning({
-        id: stores.id,
-        name: stores.name,
-        slug: stores.slug,
-        description: stores.description,
-        ownerUserId: stores.ownerUserId,
-        plan: stores.plan,
-        pdvAccess: stores.pdvAccess,
-        pdvEnabled: stores.pdvEnabled,
-        settings: stores.settings,
-      });
+      };
+    }
 
     return store;
   });
@@ -73,13 +197,60 @@ export const getStoreBySlugFn = createServerFn({ method: "GET" })
   .inputValidator((slug: string) => slug)
   .handler(async ({ data: slug }) => {
     const db = getDb();
-    const rows = await db
-      .select()
-      .from(stores)
-      .where(eq(stores.slug, slug))
-      .limit(1);
+    try {
+      const rows = await db
+        .select({
+          id: stores.id,
+          ownerUserId: stores.ownerUserId,
+          name: stores.name,
+          slug: stores.slug,
+          description: stores.description,
+          plan: stores.plan,
+          pdvAccess: stores.pdvAccess,
+          pdvEnabled: stores.pdvEnabled,
+          settings: stores.settings,
+        })
+        .from(stores)
+        .where(eq(stores.slug, slug))
+        .limit(1);
 
-    return rows[0] ?? null;
+      const row = rows[0];
+      return row ? mapStorePayload(row) : null;
+    } catch (error) {
+      if (!isMissingSettingsColumnError(error)) throw error;
+
+      const fallback = await db.execute(sql`
+        select id, owner_user_id, name, slug, description, plan, pdv_access, pdv_enabled
+        from stores
+        where slug = ${slug}
+        limit 1
+      `);
+
+      const row = fallback.rows[0] as {
+        id: string;
+        owner_user_id: string;
+        name: string;
+        slug: string;
+        description: string;
+        plan: string;
+        pdv_access: boolean;
+        pdv_enabled: boolean;
+      } | undefined;
+
+      if (!row) return null;
+
+      return {
+        id: row.id,
+        ownerUserId: row.owner_user_id,
+        name: row.name,
+        slug: row.slug,
+        description: row.description,
+        plan: row.plan,
+        pdvAccess: row.pdv_access,
+        pdvEnabled: row.pdv_enabled,
+        settings: {},
+      };
+    }
   });
 
 export const getStoreByOwnerFn = createServerFn({ method: "GET" })
@@ -87,23 +258,60 @@ export const getStoreByOwnerFn = createServerFn({ method: "GET" })
   .handler(async ({ data: ownerUserId }) => {
     const parsedOwner = z.string().uuid("ID de usuário inválido").parse(ownerUserId);
     const db = getDb();
-    const rows = await db
-      .select({
-        id: stores.id,
-        ownerUserId: stores.ownerUserId,
-        name: stores.name,
-        slug: stores.slug,
-        description: stores.description,
-        plan: stores.plan,
-        pdvAccess: stores.pdvAccess,
-        pdvEnabled: stores.pdvEnabled,
-        settings: stores.settings,
-      })
-      .from(stores)
-      .where(eq(stores.ownerUserId, parsedOwner))
-      .limit(1);
+    try {
+      const rows = await db
+        .select({
+          id: stores.id,
+          ownerUserId: stores.ownerUserId,
+          name: stores.name,
+          slug: stores.slug,
+          description: stores.description,
+          plan: stores.plan,
+          pdvAccess: stores.pdvAccess,
+          pdvEnabled: stores.pdvEnabled,
+          settings: stores.settings,
+        })
+        .from(stores)
+        .where(eq(stores.ownerUserId, parsedOwner))
+        .limit(1);
 
-    return rows[0] ?? null;
+      const row = rows[0];
+      return row ? mapStorePayload(row) : null;
+    } catch (error) {
+      if (!isMissingSettingsColumnError(error)) throw error;
+
+      const fallback = await db.execute(sql`
+        select id, owner_user_id, name, slug, description, plan, pdv_access, pdv_enabled
+        from stores
+        where owner_user_id = ${parsedOwner}
+        limit 1
+      `);
+
+      const row = fallback.rows[0] as {
+        id: string;
+        owner_user_id: string;
+        name: string;
+        slug: string;
+        description: string;
+        plan: string;
+        pdv_access: boolean;
+        pdv_enabled: boolean;
+      } | undefined;
+
+      if (!row) return null;
+
+      return {
+        id: row.id,
+        ownerUserId: row.owner_user_id,
+        name: row.name,
+        slug: row.slug,
+        description: row.description,
+        plan: row.plan,
+        pdvAccess: row.pdv_access,
+        pdvEnabled: row.pdv_enabled,
+        settings: {},
+      };
+    }
   });
 
 export const upsertStoreSettingsFn = createServerFn({ method: "POST" })
@@ -151,28 +359,70 @@ export const upsertStoreSettingsFn = createServerFn({ method: "POST" })
       throw new Error("Loja não encontrada para este usuário");
     }
 
-    const [updated] = await db
-      .update(stores)
-      .set({
-        name: parsed.name.trim(),
-        slug: parsed.slug,
-        description: parsed.description.trim(),
-        settings: parsed.settings,
-      })
-      .where(eq(stores.id, parsed.storeId))
-      .returning({
-        id: stores.id,
-        ownerUserId: stores.ownerUserId,
-        name: stores.name,
-        slug: stores.slug,
-        description: stores.description,
-        plan: stores.plan,
-        pdvAccess: stores.pdvAccess,
-        pdvEnabled: stores.pdvEnabled,
-        settings: stores.settings,
-      });
+    try {
+      const [updated] = await db
+        .update(stores)
+        .set({
+          name: parsed.name.trim(),
+          slug: parsed.slug,
+          description: parsed.description.trim(),
+          settings: parsed.settings,
+        })
+        .where(eq(stores.id, parsed.storeId))
+        .returning({
+          id: stores.id,
+          ownerUserId: stores.ownerUserId,
+          name: stores.name,
+          slug: stores.slug,
+          description: stores.description,
+          plan: stores.plan,
+          pdvAccess: stores.pdvAccess,
+          pdvEnabled: stores.pdvEnabled,
+          settings: stores.settings,
+        });
 
-    return updated;
+      if (!updated) {
+        throw new Error("Falha ao atualizar loja");
+      }
+
+      return mapStorePayload(updated);
+    } catch (error) {
+      if (!isMissingSettingsColumnError(error)) throw error;
+
+      const fallback = await db.execute(sql`
+        update stores
+        set name = ${parsed.name.trim()}, slug = ${parsed.slug}, description = ${parsed.description.trim()}
+        where id = ${parsed.storeId}
+        returning id, owner_user_id, name, slug, description, plan, pdv_access, pdv_enabled
+      `);
+
+      const row = fallback.rows[0] as {
+        id: string;
+        owner_user_id: string;
+        name: string;
+        slug: string;
+        description: string;
+        plan: string;
+        pdv_access: boolean;
+        pdv_enabled: boolean;
+      } | undefined;
+
+      if (!row) {
+        throw new Error("Falha ao atualizar loja");
+      }
+
+      return {
+        id: row.id,
+        ownerUserId: row.owner_user_id,
+        name: row.name,
+        slug: row.slug,
+        description: row.description,
+        plan: row.plan,
+        pdvAccess: row.pdv_access,
+        pdvEnabled: row.pdv_enabled,
+        settings: {},
+      };
+    }
   });
 
 export const syncStoreToDbFn = createServerFn({ method: "POST" })
@@ -207,13 +457,22 @@ export const syncStoreToDbFn = createServerFn({ method: "POST" })
       return { ok: true, message: "Loja já existe no servidor" };
     }
 
-    await db.insert(stores).values({
-      name: parsed.name.trim(),
-      slug: parsed.slug,
-      description: parsed.description.trim(),
-      settings: {},
-      ownerUserId: parsed.ownerUserId,
-    });
+    try {
+      await db.insert(stores).values({
+        name: parsed.name.trim(),
+        slug: parsed.slug,
+        description: parsed.description.trim(),
+        settings: {},
+        ownerUserId: parsed.ownerUserId,
+      });
+    } catch (error) {
+      if (!isMissingSettingsColumnError(error)) throw error;
+
+      await db.execute(sql`
+        insert into stores (name, slug, description, owner_user_id)
+        values (${parsed.name.trim()}, ${parsed.slug}, ${parsed.description.trim()}, ${parsed.ownerUserId})
+      `);
+    }
 
     return { ok: true, message: "Loja sincronizada com sucesso" };
   });
