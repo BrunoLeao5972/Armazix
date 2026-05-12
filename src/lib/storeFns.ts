@@ -310,6 +310,69 @@ export const getStoreBySlugFn = createServerFn({ method: "GET" })
     }
   });
 
+export const getStoreWithProductsBySlugFn = createServerFn({ method: "GET" })
+  .inputValidator((slug: string) => slug)
+  .handler(async ({ data: slug }) => {
+    const store = await getStoreBySlugFn({ data: slug });
+    if (!store) return null;
+
+    const settingsData = store.settings && typeof store.settings === "object"
+      ? (store.settings as Record<string, unknown>)
+      : {};
+
+    const productsFromSettings = Array.isArray(settingsData.products)
+      ? settingsData.products
+          .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
+          .map((item) => {
+            const parsedCode = Number(item.code ?? 0);
+            const parsedPrice = Number(item.price ?? 0);
+            const parsedStock = Number(item.stock ?? 0);
+            const parsedMinStock = Number(item.minStock ?? 0);
+
+            return {
+              id: typeof item.id === "string" && item.id ? item.id : "",
+              storeId: store.id,
+              code: Number.isFinite(parsedCode) ? parsedCode : 0,
+              name: typeof item.name === "string" ? item.name : "",
+              description: typeof item.description === "string" ? item.description : "",
+              price: Number.isFinite(parsedPrice) ? parsedPrice : 0,
+              stock: Number.isFinite(parsedStock) ? parsedStock : 0,
+              unit: typeof item.unit === "string" && item.unit ? item.unit : "UN",
+              minStock: Number.isFinite(parsedMinStock) ? parsedMinStock : 0,
+              category: typeof item.category === "string" ? item.category : "",
+              imageUrl: typeof item.imageUrl === "string" ? item.imageUrl : null,
+              images: Array.isArray(item.images) ? item.images.filter((img): img is string => typeof img === "string") : undefined,
+              active: typeof item.active === "boolean" ? item.active : true,
+              featured: typeof item.featured === "boolean" ? item.featured : false,
+              onPromotion: typeof item.onPromotion === "boolean" ? item.onPromotion : false,
+              promotionPrice: typeof item.promotionPrice === "number" ? item.promotionPrice : null,
+              variations: Array.isArray(item.variations) ? item.variations : undefined,
+            };
+          })
+      : [];
+
+    return {
+      store: {
+        id: store.id,
+        name: store.name,
+        slug: store.slug,
+        description: store.description,
+        logoUrl: settingsData.logoUrl ?? null,
+        phones: settingsData.phones ?? undefined,
+        whatsapp: settingsData.whatsapp ?? null,
+        address: settingsData.address ?? null,
+        addressInfo: settingsData.addressInfo ?? undefined,
+        businessHours: settingsData.businessHours ?? undefined,
+        delivery: settingsData.delivery ?? null,
+        payments: settingsData.payments ?? null,
+        banners: settingsData.banners ?? null,
+        categories: settingsData.categories ?? undefined,
+        plan: store.plan,
+      },
+      products: productsFromSettings,
+    };
+  });
+
 export const getStoreByOwnerFn = createServerFn({ method: "GET" })
   .inputValidator((ownerUserId: string) => ownerUserId)
   .handler(async ({ data: ownerUserId }) => {

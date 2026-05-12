@@ -2,9 +2,11 @@ import {
   createFileRoute,
   Link,
 } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { PublicStoreView } from "@/components/PublicStoreView";
 import { buildAppUrl } from "@/lib/seo";
 import { selectStoreBySlug } from "@/lib/store";
+import { getStoreWithProductsBySlugFn } from "@/lib/storeFns";
 
 function prettifySlug(slug: string) {
   return slug
@@ -83,5 +85,43 @@ export const Route = createFileRoute("/loja/$slug")({
 
 function PublicStore() {
   const { slug } = Route.useParams();
-  return <PublicStoreView slug={slug} />;
+  const [serverData, setServerData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void getStoreWithProductsBySlugFn({ data: slug })
+      .then((data) => {
+        if (!cancelled) {
+          setServerData(data);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setServerData(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-6">
+        <div className="text-center">
+          <p className="text-muted-foreground">Carregando loja...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return <PublicStoreView slug={slug} serverData={serverData} />;
 }
