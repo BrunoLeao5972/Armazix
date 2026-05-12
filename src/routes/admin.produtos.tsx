@@ -376,7 +376,7 @@ function ProductsPage() {
           products={products}
           categories={storeCategories}
           onClose={() => setOpen(false)}
-          onSave={(data) => {
+          onSave={(data, onError) => {
             if (editing) {
               setSyncErr("");
               updateProduct(editing.id, data);
@@ -401,8 +401,7 @@ function ProductsPage() {
                 });
                 setOpen(false);
               } else {
-                setLimitErr(true);
-                setOpen(false);
+                onError(result.error ?? "Erro ao criar produto.");
               }
             }
           }}
@@ -423,7 +422,7 @@ function ProductModal({
   products: Product[];
   categories: string[];
   onClose: () => void;
-  onSave: (p: ProductForm) => void;
+  onSave: (p: ProductForm, onError: (err: string) => void) => void;
 }) {
   const store = useCurrentStore();
   const userId = useAuth((s) => s.currentUserId);
@@ -664,6 +663,9 @@ function ProductModal({
         unit: form.unit.trim(),
         name: form.name.trim(),
         imageUrl: imgs.length > 0 ? imgs[0] : (form.imageUrl ?? ""),
+      }, (err) => {
+        setFormErr(err);
+        setSaved(false);
       });
     }, 300);
   };
