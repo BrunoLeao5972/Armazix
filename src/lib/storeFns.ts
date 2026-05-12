@@ -355,8 +355,16 @@ export const getStoreBySlugFn = createServerFn({ method: "GET" })
 export const getStoreWithProductsBySlugFn = createServerFn({ method: "GET" })
   .inputValidator((slug: string) => slug)
   .handler(async ({ data: slug }) => {
+    console.log(`[getStoreWithProductsBySlugFn] Fetching store with slug: ${slug}`);
     const store = await getStoreBySlugFn({ data: slug });
-    if (!store) return null;
+    if (!store) {
+      console.log(`[getStoreWithProductsBySlugFn] Store not found`);
+      return null;
+    }
+
+    console.log(`[getStoreWithProductsBySlugFn] Store found: ${store.name}`);
+    console.log(`[getStoreWithProductsBySlugFn] Settings type: ${typeof store.settings}`);
+    console.log(`[getStoreWithProductsBySlugFn] Settings keys: ${store.settings ? Object.keys(store.settings).join(", ") : "null"}`);
 
     const settingsData = store.settings && typeof store.settings === "object"
       ? (store.settings as Record<string, unknown>)
@@ -392,6 +400,11 @@ export const getStoreWithProductsBySlugFn = createServerFn({ method: "GET" })
             };
           })
       : [];
+
+    console.log(`[getStoreWithProductsBySlugFn] Products extracted: ${productsFromSettings.length}`);
+    productsFromSettings.forEach((p) => {
+      console.log(`  - ${p.name} (${p.code}) R$ ${(p.price / 100).toFixed(2)}`);
+    });
 
     return {
       store: {
@@ -522,6 +535,12 @@ export const upsertStoreSettingsFn = createServerFn({ method: "POST" })
     }
 
     try {
+      console.log(`[upsertStoreSettingsFn] Saving store ${parsed.storeId} with slug ${parsed.slug}`);
+      console.log(`[upsertStoreSettingsFn] Settings keys:`, Object.keys(parsed.settings));
+      if (parsed.settings.products) {
+        console.log(`[upsertStoreSettingsFn] Products count: ${(parsed.settings.products as any[]).length}`);
+      }
+
       const [updated] = await db
         .update(stores)
         .set({
