@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { Check, Download, Edit2, Plus, ToggleLeft, ToggleRight, UserCircle, X } from "lucide-react";
 import { useAuth, useTenant, type StoreUser } from "@/lib/store";
+import { persistStoreUsersToServerFn } from "@/lib/storeFns";
 
 async function hashPassword(password: string): Promise<string> {
   const data = new TextEncoder().encode(password);
@@ -56,6 +57,25 @@ function AdminUsuariosPage() {
   });
   const [userErr, setUserErr] = useState("");
   const [editingUser, setEditingUser] = useState<string | null>(null);
+  const [syncErr, setSyncErr] = useState("");
+
+  const persistStoreUsersToServer = async () => {
+    try {
+      setSyncErr("");
+      const users = useTenant.getState().storeUsers;
+      await persistStoreUsersToServerFn({
+        data: {
+          storeId,
+          ownerUserId: userId || "",
+          storeUsers: users.filter((u) => u.storeId === storeId),
+        },
+      });
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Erro ao sincronizar";
+      setSyncErr(msg);
+      console.error("Erro ao sincronizar usuários:", error);
+    }
+  };
 
   const saveUser = async () => {
     if (!userForm.name.trim() || !userForm.password.trim() || !userForm.fullName.trim()) {
@@ -87,9 +107,12 @@ function AdminUsuariosPage() {
     setUserErr("");
     setEditingUser(null);
     setIsFormOpen(false);
+
+    await persistStoreUsersToServer();
   };
 
   const startEditUser = (user: StoreUser) => {
+    setSyncErr("");
     setUserForm({
       name: user.name,
       password: user.password ?? "",
@@ -113,11 +136,13 @@ function AdminUsuariosPage() {
     setUserForm({ name: "", password: "", fullName: "", role: "vendedor", active: true });
     setEditingUser(null);
     setUserErr("");
+    setSyncErr("");
     setIsFormOpen(false);
   };
 
-  const toggleUserStatus = (user: StoreUser) => {
+  const toggleUserStatus = async (user: StoreUser) => {
     updateStoreUser(user.id, { active: !user.active });
+    await persistStoreUsersToServer();
   };
 
   const downloadFile = (content: string, fileName: string, mimeType: string) => {
@@ -229,6 +254,11 @@ function AdminUsuariosPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-8 py-10">
+      {syncErr && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+          {syncErr}
+        </div>
+      )}
       <header className="space-y-2">
         <h1 className="text-2xl font-bold text-foreground">Usuarios</h1>
         <p className="text-sm text-muted-foreground">
@@ -306,7 +336,7 @@ function AdminUsuariosPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => toggleUserStatus(user)}
+                    onClick={() => void toggleUserStatus(user)}
                     className={`inline-flex items-center gap-2 rounded-md px-2 py-1 text-xs font-medium ${
                       user.active ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground"
                     }`}
@@ -381,7 +411,7 @@ function AdminUsuariosPage() {
             <div className="mt-3 flex gap-2">
               <button
                 type="button"
-                onClick={saveUser}
+                onClick={() => void saveUser()}
                 className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90"
               >
                 <Check className="h-4 w-4" />

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useTenant, formatBRL, type Order } from "@/lib/store";
+import { useTenant, formatBRL, type Order, useAuth } from "@/lib/store";
+import { persistOrdersToServerFn } from "@/lib/storeFns";
 import { useCurrentStore } from "./admin";
 import {
   Receipt,
@@ -35,8 +36,28 @@ const STATUS_STYLE: Record<Order["status"], string> = {
 
 type Tab = "all" | Order["status"];
 
+async function persistOrdersToServer(
+  storeId: string,
+  ownerUserId: string,
+  orders: Order[],
+) {
+  try {
+    await persistOrdersToServerFn({
+      data: {
+        storeId,
+        ownerUserId,
+        orders: orders.filter((o) => o.storeId === storeId),
+      },
+    });
+  } catch (error) {
+    console.error("Erro ao sincronizar pedidos:", error);
+    throw error;
+  }
+}
+
 function OrdersPage() {
   const store = useCurrentStore();
+  const userId = useAuth((s) => s.currentUserId) || "";
   const allOrders = useTenant((s) => s.orders);
   const orders = useMemo(
     () => allOrders.filter((o) => o.storeId === store.id),
@@ -44,6 +65,19 @@ function OrdersPage() {
   );
   const updateOrderStatus = useTenant((s) => s.updateOrderStatus);
   const [tab, setTab] = useState<Tab>("all");
+  const [syncErr, setSyncErr] = useState("");
+
+  const handleChangeStatus = async (orderId: string, status: Order["status"]) => {
+    setSyncErr("");
+    updateOrderStatus(orderId, status);
+    
+    try {
+      const nextOrders = useTenant.getState().orders;
+      await persistOrdersToServer(store.id, userId, nextOrders);
+    } catch (error) {
+      setSyncErr(error instanceof Error ? error.message : "Erro ao sincronizar");
+    }
+  };
 
   const counts = useMemo(() => {
     const c: Record<Tab, number> = {
@@ -78,6 +112,12 @@ function OrdersPage() {
           Acompanhe e atualize o status dos pedidos da sua loja.
         </p>
       </div>
+
+      {syncErr && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+          {syncErr}
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid gap-3 sm:grid-cols-3">
@@ -134,7 +174,7 @@ function OrdersPage() {
             <OrderCard
               key={o.id}
               order={o}
-              onChangeStatus={(s) => updateOrderStatus(o.id, s)}
+              onChangeStatus={(s) => handleChangeStatus(o.id, s)}
             />
           ))}
         </div>

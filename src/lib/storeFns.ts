@@ -533,3 +533,271 @@ export const syncStoreToDbFn = createServerFn({ method: "POST" })
 
     return { ok: true, message: "Loja sincronizada com sucesso" };
   });
+
+export const persistOrdersToServerFn = createServerFn({ method: "POST" })
+  .inputValidator(
+    (data: {
+      storeId: string;
+      ownerUserId: string;
+      orders: unknown[];
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    const parsed = z
+      .object({
+        storeId: z.string().uuid("ID da loja inválido"),
+        ownerUserId: z.string().uuid("ID de usuário inválido"),
+        orders: z.array(z.any()).default([]),
+      })
+      .parse(data);
+
+    const db = getDb();
+    const existing = await db
+      .select({ id: stores.id, settings: stores.settings })
+      .from(stores)
+      .where(
+        and(
+          eq(stores.id, parsed.storeId),
+          eq(stores.ownerUserId, parsed.ownerUserId),
+        ),
+      )
+      .limit(1);
+
+    if (existing.length === 0) {
+      throw new Error("Loja não encontrada para este usuário");
+    }
+
+    const currentSettings = toSerializableSettings(existing[0].settings);
+    const updatedSettings = {
+      ...currentSettings,
+      orders: parsed.orders,
+    };
+
+    try {
+      const [updated] = await db
+        .update(stores)
+        .set({ settings: updatedSettings })
+        .where(eq(stores.id, parsed.storeId))
+        .returning({
+          id: stores.id,
+          ownerUserId: stores.ownerUserId,
+          name: stores.name,
+          slug: stores.slug,
+          description: stores.description,
+          plan: stores.plan,
+          pdvAccess: stores.pdvAccess,
+          pdvEnabled: stores.pdvEnabled,
+          settings: stores.settings,
+        });
+
+      if (!updated) {
+        throw new Error("Falha ao atualizar pedidos");
+      }
+
+      return mapStorePayload(updated);
+    } catch (error) {
+      if (!isMissingSettingsColumnError(error)) throw error;
+      throw new Error("Coluna de configurações não encontrada");
+    }
+  });
+
+export const persistCustomersToServerFn = createServerFn({ method: "POST" })
+  .inputValidator(
+    (data: {
+      storeId: string;
+      ownerUserId: string;
+      customers: unknown[];
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    const parsed = z
+      .object({
+        storeId: z.string().uuid("ID da loja inválido"),
+        ownerUserId: z.string().uuid("ID de usuário inválido"),
+        customers: z.array(z.any()).default([]),
+      })
+      .parse(data);
+
+    const db = getDb();
+    const existing = await db
+      .select({ id: stores.id, settings: stores.settings })
+      .from(stores)
+      .where(
+        and(
+          eq(stores.id, parsed.storeId),
+          eq(stores.ownerUserId, parsed.ownerUserId),
+        ),
+      )
+      .limit(1);
+
+    if (existing.length === 0) {
+      throw new Error("Loja não encontrada para este usuário");
+    }
+
+    const currentSettings = toSerializableSettings(existing[0].settings);
+    const updatedSettings = {
+      ...currentSettings,
+      customers: parsed.customers,
+    };
+
+    try {
+      const [updated] = await db
+        .update(stores)
+        .set({ settings: updatedSettings })
+        .where(eq(stores.id, parsed.storeId))
+        .returning({
+          id: stores.id,
+          ownerUserId: stores.ownerUserId,
+          name: stores.name,
+          slug: stores.slug,
+          description: stores.description,
+          plan: stores.plan,
+          pdvAccess: stores.pdvAccess,
+          pdvEnabled: stores.pdvEnabled,
+          settings: stores.settings,
+        });
+
+      if (!updated) {
+        throw new Error("Falha ao atualizar clientes");
+      }
+
+      return mapStorePayload(updated);
+    } catch (error) {
+      if (!isMissingSettingsColumnError(error)) throw error;
+      throw new Error("Coluna de configurações não encontrada");
+    }
+  });
+
+export const persistPaymentMethodsToServerFn = createServerFn({ method: "POST" })
+  .inputValidator(
+    (data: {
+      storeId: string;
+      ownerUserId: string;
+      paymentMethods: unknown[];
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    const parsed = z
+      .object({
+        storeId: z.string().uuid("ID da loja inválido"),
+        ownerUserId: z.string().uuid("ID de usuário inválido"),
+        paymentMethods: z.array(z.any()).default([]),
+      })
+      .parse(data);
+
+    const db = getDb();
+    const existing = await db
+      .select({ id: stores.id, settings: stores.settings })
+      .from(stores)
+      .where(
+        and(
+          eq(stores.id, parsed.storeId),
+          eq(stores.ownerUserId, parsed.ownerUserId),
+        ),
+      )
+      .limit(1);
+
+    if (existing.length === 0) {
+      throw new Error("Loja não encontrada para este usuário");
+    }
+
+    const currentSettings = toSerializableSettings(existing[0].settings);
+    const updatedSettings = {
+      ...currentSettings,
+      paymentMethods: parsed.paymentMethods,
+    };
+
+    try {
+      const [updated] = await db
+        .update(stores)
+        .set({ settings: updatedSettings })
+        .where(eq(stores.id, parsed.storeId))
+        .returning({
+          id: stores.id,
+          ownerUserId: stores.ownerUserId,
+          name: stores.name,
+          slug: stores.slug,
+          description: stores.description,
+          plan: stores.plan,
+          pdvAccess: stores.pdvAccess,
+          pdvEnabled: stores.pdvEnabled,
+          settings: stores.settings,
+        });
+
+      if (!updated) {
+        throw new Error("Falha ao atualizar métodos de pagamento");
+      }
+
+      return mapStorePayload(updated);
+    } catch (error) {
+      if (!isMissingSettingsColumnError(error)) throw error;
+      throw new Error("Coluna de configurações não encontrada");
+    }
+  });
+
+export const persistStoreUsersToServerFn = createServerFn({ method: "POST" })
+  .inputValidator(
+    (data: {
+      storeId: string;
+      ownerUserId: string;
+      storeUsers: unknown[];
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    const parsed = z
+      .object({
+        storeId: z.string().uuid("ID da loja inválido"),
+        ownerUserId: z.string().uuid("ID de usuário inválido"),
+        storeUsers: z.array(z.any()).default([]),
+      })
+      .parse(data);
+
+    const db = getDb();
+    const existing = await db
+      .select({ id: stores.id, settings: stores.settings })
+      .from(stores)
+      .where(
+        and(
+          eq(stores.id, parsed.storeId),
+          eq(stores.ownerUserId, parsed.ownerUserId),
+        ),
+      )
+      .limit(1);
+
+    if (existing.length === 0) {
+      throw new Error("Loja não encontrada para este usuário");
+    }
+
+    const currentSettings = toSerializableSettings(existing[0].settings);
+    const updatedSettings = {
+      ...currentSettings,
+      storeUsers: parsed.storeUsers,
+    };
+
+    try {
+      const [updated] = await db
+        .update(stores)
+        .set({ settings: updatedSettings })
+        .where(eq(stores.id, parsed.storeId))
+        .returning({
+          id: stores.id,
+          ownerUserId: stores.ownerUserId,
+          name: stores.name,
+          slug: stores.slug,
+          description: stores.description,
+          plan: stores.plan,
+          pdvAccess: stores.pdvAccess,
+          pdvEnabled: stores.pdvEnabled,
+          settings: stores.settings,
+        });
+
+      if (!updated) {
+        throw new Error("Falha ao atualizar usuários da loja");
+      }
+
+      return mapStorePayload(updated);
+    } catch (error) {
+      if (!isMissingSettingsColumnError(error)) throw error;
+      throw new Error("Coluna de configurações não encontrada");
+    }
+  });

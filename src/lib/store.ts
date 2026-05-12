@@ -728,6 +728,71 @@ export const useTenant = create<TenantState>()(
           pdvEnabled: data.pdvEnabled ?? baseStore.pdvEnabled,
         });
 
+        const ordersFromSettings = Array.isArray(settingsData.orders)
+          ? settingsData.orders
+              .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
+              .map((item) => ({
+                id: typeof item.id === "string" && item.id ? item.id : uid(),
+                storeId: data.id,
+                customer: typeof item.customer === "object" ? (item.customer as any) : { name: "", email: "", phone: "", address: "" },
+                items: Array.isArray(item.items) ? (item.items as any[]) : [],
+                total: typeof item.total === "number" ? item.total : 0,
+                paymentMethod: typeof item.paymentMethod === "string" ? item.paymentMethod : "pix",
+                deliveryMethod: typeof item.deliveryMethod === "string" ? item.deliveryMethod : "pickup",
+                deliveryZone: typeof item.deliveryZone === "string" ? item.deliveryZone : undefined,
+                cashChange: typeof item.cashChange === "object" ? (item.cashChange as any) : undefined,
+                status: typeof item.status === "string" ? item.status : "pending",
+                createdAt: typeof item.createdAt === "number" ? item.createdAt : Date.now(),
+              }))
+          : null;
+
+        const customersFromSettings = Array.isArray(settingsData.customers)
+          ? settingsData.customers
+              .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
+              .map((item) => ({
+                id: typeof item.id === "string" && item.id ? item.id : uid(),
+                storeId: data.id,
+                name: typeof item.name === "string" ? item.name : "",
+                email: typeof item.email === "string" ? item.email : "",
+                phone: typeof item.phone === "string" ? item.phone : "",
+                address: typeof item.address === "string" ? item.address : "",
+                document: typeof item.document === "string" ? item.document : undefined,
+                active: typeof item.active === "boolean" ? item.active : true,
+                createdAt: typeof item.createdAt === "number" ? item.createdAt : Date.now(),
+              }))
+          : null;
+
+        const paymentMethodsFromSettings = Array.isArray(settingsData.paymentMethods)
+          ? settingsData.paymentMethods
+              .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
+              .map((item) => ({
+                id: typeof item.id === "string" && item.id ? item.id : uid(),
+                storeId: data.id,
+                name: typeof item.name === "string" ? item.name : "",
+                type: typeof item.type === "string" ? item.type : "cash",
+                installments: typeof item.installments === "number" ? item.installments : undefined,
+                active: typeof item.active === "boolean" ? item.active : true,
+                createdAt: typeof item.createdAt === "number" ? item.createdAt : Date.now(),
+              }))
+          : null;
+
+        const storeUsersFromSettings = Array.isArray(settingsData.storeUsers)
+          ? settingsData.storeUsers
+              .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
+              .map((item) => ({
+                id: typeof item.id === "string" && item.id ? item.id : uid(),
+                storeId: data.id,
+                name: typeof item.name === "string" ? item.name : "",
+                password: typeof item.password === "string" ? item.password : "",
+                fullName: typeof item.fullName === "string" ? item.fullName : "",
+                document: typeof item.document === "string" ? item.document : undefined,
+                email: typeof item.email === "string" ? item.email : undefined,
+                role: typeof item.role === "string" ? item.role : "vendedor",
+                active: typeof item.active === "boolean" ? item.active : true,
+                createdAt: typeof item.createdAt === "number" ? item.createdAt : Date.now(),
+              }))
+          : null;
+
         const currentState = get();
 
         set({
@@ -741,6 +806,34 @@ export const useTenant = create<TenantState>()(
                   ...productsFromSettings,
                 ]
               : currentState.products,
+          orders:
+            ordersFromSettings !== null
+              ? [
+                  ...currentState.orders.filter((order) => order.storeId !== data.id),
+                  ...ordersFromSettings,
+                ]
+              : currentState.orders,
+          customers:
+            customersFromSettings !== null
+              ? [
+                  ...currentState.customers.filter((customer) => customer.storeId !== data.id),
+                  ...customersFromSettings,
+                ]
+              : currentState.customers,
+          paymentMethods:
+            paymentMethodsFromSettings !== null
+              ? [
+                  ...currentState.paymentMethods.filter((pm) => pm.storeId !== data.id),
+                  ...paymentMethodsFromSettings,
+                ]
+              : currentState.paymentMethods,
+          storeUsers:
+            storeUsersFromSettings !== null
+              ? [
+                  ...currentState.storeUsers.filter((user) => user.storeId !== data.id),
+                  ...storeUsersFromSettings,
+                ]
+              : currentState.storeUsers,
         });
       },
       createStore: (ownerId, { name, slug, description }) => {

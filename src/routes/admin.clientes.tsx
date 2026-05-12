@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { Check, Download, Edit2, Plus, ToggleLeft, ToggleRight, Users, X } from "lucide-react";
 import { useAuth, useTenant, type Customer } from "@/lib/store";
+import { persistCustomersToServerFn } from "@/lib/storeFns";
 
 export const Route = createFileRoute("/admin/clientes")({
   component: AdminClientesPage,
@@ -41,7 +42,26 @@ function AdminClientesPage() {
   });
   const [customerErr, setCustomerErr] = useState("");
   const [editingCustomer, setEditingCustomer] = useState<string | null>(null);
+  const [syncErr, setSyncErr] = useState("");
   const generalCustomerInitialized = useRef(false);
+
+  const persistCustomersToServer = async () => {
+    try {
+      setSyncErr("");
+      const customers = useTenant.getState().customers;
+      await persistCustomersToServerFn({
+        data: {
+          storeId,
+          ownerUserId: userId || "",
+          customers: customers.filter((c) => c.storeId === storeId),
+        },
+      });
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Erro ao sincronizar";
+      setSyncErr(msg);
+      console.error("Erro ao sincronizar clientes:", error);
+    }
+  };
 
   useEffect(() => {
     if (!storeId || generalCustomerInitialized.current) return;
@@ -60,12 +80,14 @@ function AdminClientesPage() {
         document: "",
         active: true,
       });
+      // Sync the default "Geral" customer to server
+      persistCustomersToServer().catch(() => {});
     }
 
     generalCustomerInitialized.current = true;
   }, [storeId]);
 
-  const saveCustomer = () => {
+  const saveCustomer = async () => {
     if (!customerForm.name.trim() || !customerForm.address.trim() || !customerForm.document.trim()) {
       setCustomerErr("Informe nome completo, endereco completo e CPF/CNPJ.");
       return;
@@ -94,9 +116,12 @@ function AdminClientesPage() {
     setCustomerErr("");
     setEditingCustomer(null);
     setIsFormOpen(false);
+
+    await persistCustomersToServer();
   };
 
   const startEditCustomer = (customer: Customer) => {
+    setSyncErr("");
     setCustomerForm({
       name: customer.name,
       address: customer.address,
@@ -120,11 +145,13 @@ function AdminClientesPage() {
     setCustomerForm({ name: "", address: "", document: "", phone: "", email: "" });
     setEditingCustomer(null);
     setCustomerErr("");
+    setSyncErr("");
     setIsFormOpen(false);
   };
 
-  const toggleCustomerStatus = (customer: Customer) => {
+  const toggleCustomerStatus = async (customer: Customer) => {
     updateCustomer(customer.id, { active: !(customer.active ?? true) });
+    await persistCustomersToServer();
   };
 
   const downloadFile = (content: string, fileName: string, mimeType: string) => {
@@ -244,6 +271,11 @@ function AdminClientesPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-8 py-10">
+      {syncErr && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+          {syncErr}
+        </div>
+      )}
       <header className="space-y-2">
         <h1 className="text-2xl font-bold text-foreground">Clientes</h1>
         <p className="text-sm text-muted-foreground">
@@ -323,7 +355,7 @@ function AdminClientesPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => toggleCustomerStatus(customer)}
+                      onClick={() => void toggleCustomerStatus(customer)}
                       className={`inline-flex items-center gap-2 rounded-md px-2 py-1 text-xs font-medium ${
                         active ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground"
                       }`}
@@ -386,7 +418,7 @@ function AdminClientesPage() {
             <div className="mt-3 flex gap-2">
               <button
                 type="button"
-                onClick={saveCustomer}
+                onClick={() => void saveCustomer()}
                 className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90"
               >
                 <Check className="h-4 w-4" />
