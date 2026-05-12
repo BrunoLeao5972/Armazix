@@ -173,6 +173,11 @@ export const createStoreFn = createServerFn({ method: "POST" })
 
     const db = getDb();
 
+    // Validação extra: slug não pode estar vazio após normalização
+    if (!parsed.slug || parsed.slug.trim().length === 0) {
+      throw new Error("Endereço da loja inválido. Use apenas letras e números.");
+    }
+
     // Check if slug is already taken
     const existingSlug = await db
       .select({ id: stores.id })
@@ -225,11 +230,26 @@ export const createStoreFn = createServerFn({ method: "POST" })
       // Handle database constraint violations
       const errorMessage = error instanceof Error ? error.message : "";
       
-      if (errorMessage.includes("stores_slug_unique") || errorMessage.includes("slug")) {
+      // Log do erro real para debugging
+      console.error("❌ Erro ao criar loja:", {
+        message: errorMessage,
+        error: error,
+      });
+      
+      // Apenas se for realmente constraint unique
+      if (
+        errorMessage.includes("duplicate key") ||
+        errorMessage.includes("UNIQUE constraint failed") ||
+        errorMessage.includes("stores_slug_unique")
+      ) {
         throw new Error("Este endereço da loja já está em uso");
       }
       
-      if (errorMessage.includes("stores_name_unique") || errorMessage.includes("name")) {
+      if (
+        errorMessage.includes("duplicate key") ||
+        errorMessage.includes("UNIQUE constraint failed") ||
+        errorMessage.includes("stores_name_unique")
+      ) {
         throw new Error("Este nome de loja já está em uso");
       }
 
