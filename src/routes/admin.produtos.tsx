@@ -1,11 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import {
+  normalizeStore,
+  useAuth,
   useTenant,
   formatBRL,
   type Product,
   type ProductVariation,
 } from "@/lib/store";
+import { upsertStoreSettingsFn } from "@/lib/storeFns";
 import { useCurrentStore } from "./admin";
 import {
   AlertTriangle,
@@ -63,7 +66,7 @@ const emptyForm: ProductForm = {
   minStock: 0,
   stock: 0,
   category: "",
-  image: "📦",
+  image: "PROD",
   imageUrl: "",
   images: [],
   trackStock: false,
@@ -267,7 +270,7 @@ function ProductsPage() {
                       )}
                       {p.featured && (
                         <span className="rounded-full bg-yellow-500 px-2 py-0.5 text-xs font-medium text-white">
-                          ★ Destaque
+                          Destaque
                         </span>
                       )}
                     </div>
@@ -355,7 +358,9 @@ function ProductModal({
   onSave: (p: ProductForm) => void;
 }) {
   const store = useCurrentStore();
+  const userId = useAuth((s) => s.currentUserId);
   const updateStore = useTenant((s) => s.updateStore);
+  const normalizedStore = useMemo(() => normalizeStore(store), [store]);
 
   // Local categories so "+ Nova categoria" reflects immediately
   const [categories, setCategories] = useState(initialCategories);
@@ -380,7 +385,7 @@ function ProductModal({
           unit: initial.unit || "UN",
           minStock: initial.minStock ?? 0,
           category: initial.category,
-          image: initial.image || "📦",
+          image: initial.image || "PROD",
           imageUrl: initial.imageUrl ?? "",
           images: (initial as ProductForm).images ?? [],
           trackStock: (initial as ProductForm).trackStock ?? false,
@@ -499,7 +504,7 @@ function ProductModal({
 
   // ── Category handlers ─────────────────────────────────────────────────────
 
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     const cat = newCatValue.trim();
     if (!cat) { setNewCatErr("Informe o nome da categoria."); return; }
     if (categories.some((c) => c.toLowerCase() === cat.toLowerCase())) {
@@ -512,6 +517,38 @@ function ProductModal({
     setNewCatValue("");
     setNewCatErr("");
     setNewCatOpen(false);
+
+    if (!userId) return;
+
+    try {
+      await upsertStoreSettingsFn({
+        data: {
+          storeId: normalizedStore.id,
+          ownerUserId: userId,
+          name: normalizedStore.name,
+          slug: normalizedStore.slug,
+          description: normalizedStore.description,
+          settings: {
+            logoUrl: normalizedStore.logoUrl,
+            banners: normalizedStore.banners,
+            taxId: normalizedStore.taxId,
+            cnpj: normalizedStore.cnpj,
+            address: normalizedStore.address,
+            addressInfo: normalizedStore.addressInfo,
+            businessHours: normalizedStore.businessHours,
+            phones: normalizedStore.phones,
+            whatsapp: normalizedStore.whatsapp,
+            categories: updated,
+            delivery: normalizedStore.delivery,
+            payments: normalizedStore.payments,
+            pdvEnabled: normalizedStore.pdvEnabled,
+          },
+        },
+      });
+    } catch {
+      setNewCatErr("Categoria criada localmente, mas falhou ao salvar no banco.");
+      setNewCatOpen(true);
+    }
   };
 
   // ── Submit ────────────────────────────────────────────────────────────────
@@ -613,7 +650,7 @@ function ProductModal({
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
                   <input required type="number" step="0.01" min="0" value={form.price}
                     onChange={(e) => setForm({ ...form, price: Math.max(0, Number(e.target.value)) })}
-                    className="w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 outline-none ring-ring focus:ring-2" />
+                    className="w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 outline-none ring-ring focus:ring-2 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                 </div>
               </div>
               <div className="flex flex-col gap-1.5 text-sm">
@@ -622,7 +659,7 @@ function ProductModal({
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
                   <input type="number" step="0.01" min="0" placeholder="0,00" value={form.cost ?? ""}
                     onChange={(e) => setForm({ ...form, cost: e.target.value === "" ? undefined : Math.max(0, Number(e.target.value)) })}
-                    className="w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 outline-none ring-ring focus:ring-2" />
+                    className="w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 outline-none ring-ring focus:ring-2 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                 </div>
               </div>
               {margin !== null && (
@@ -810,7 +847,7 @@ function ProductModal({
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
                       <input type="number" step="0.01" min="0" placeholder="0,00" value={form.promotionPrice ?? ""}
                         onChange={(e) => setForm({ ...form, promotionPrice: e.target.value === "" ? undefined : Number(e.target.value) })}
-                        className="w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 outline-none ring-ring focus:ring-2" />
+                        className="w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 outline-none ring-ring focus:ring-2 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                     </div>
                     {form.promotionPrice != null && form.promotionPrice > 0 && form.promotionPrice >= form.price && (
                       <p className="flex items-center gap-1.5 text-xs text-orange-600">

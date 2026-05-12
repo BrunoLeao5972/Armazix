@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { formatBRL, useTenant } from "@/lib/store";
+import { Package } from "lucide-react";
 
 export const Route = createFileRoute("/loja/$slug/produto/$productId")({
   component: PublicProductDetailPage,
@@ -63,7 +64,9 @@ function PublicProductDetailPage() {
             {image ? (
               <img src={image} alt={product.name} className="h-full w-full object-cover" loading="lazy" />
             ) : (
-              <div className="flex min-h-[280px] items-center justify-center text-6xl">📦</div>
+              <div className="flex min-h-[280px] items-center justify-center text-slate-400">
+                <Package className="h-14 w-14" />
+              </div>
             )}
           </div>
 

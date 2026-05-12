@@ -1,17 +1,17 @@
 Crie um redesign completo (UI/UX) para um sistema de e-commerce moderno, incluindo tanto a interface pública (site) quanto o painel administrativo (dashboard interno).
 
-🎯 Objetivo
+Objetivo
 
 Transformar o sistema em uma experiência visual premium, moderna e fluida, inspirada em plataformas SaaS de alto nível.
 
-🎨 Referências visuais
+Referências visuais
 
 Use como base os seguintes estilos:
 
 Interface limpa, elegante e moderna semelhante ao Contas Online
 Experiência dinâmica e imersiva com vídeos de fundo como no Shopify
 Design minimalista com foco em tipografia, espaçamento e animações suaves
-🧩 Requisitos de Design
+Requisitos de Design
 1. Layout Geral
 Design responsivo (desktop e mobile)
 Estrutura com bastante espaçamento (whitespace)
@@ -58,11 +58,11 @@ Frontend: React / Next.js
 Estilização: Tailwind CSS
 Animações: Framer Motion
 Ícones: Lucide ou Heroicons
-⚡ Extras (Diferencial)
+Extras (Diferencial)
 Efeito de scroll com parallax leve
 Skeleton loading (carregamento bonito)
 Estados vazios bem trabalhados (empty states)
 Feedback visual em ações (sucesso, erro, loading)
-📌 Resultado esperado
+Resultado esperado
 
 Um design moderno, fluido e altamente profissional, comparável a plataformas SaaS internacionais, transmitindo confiança, tecnologia e facilidade de uso.

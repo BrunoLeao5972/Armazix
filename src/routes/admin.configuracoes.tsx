@@ -1122,7 +1122,7 @@ function SettingsPage() {
                         </div>
 
                         {form.delivery.fees.map((fee, index) => (
-                          <div key={`${fee.label}-${index}`} className="grid gap-2 md:grid-cols-[1fr_140px_auto]">
+                          <div key={index} className="grid gap-2 md:grid-cols-[1fr_140px_auto]">
                             <input
                               value={fee.label}
                               onChange={(e) => setDeliveryFee(index, { label: e.target.value })}

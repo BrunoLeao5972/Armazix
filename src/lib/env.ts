@@ -13,24 +13,24 @@ function getEnv(key: string): string | undefined {
   const globalEnv = (globalThis as any).env;
   if (globalEnv && typeof globalEnv === "object" && globalEnv[key]) {
     const value = globalEnv[key];
-    console.log(`[env] ✓ ${key} encontrado em globalThis.env`);
+    console.log(`[env] OK ${key} encontrado em globalThis.env`);
     return value;
   }
 
   // 2. Tenta process.env (dev/local)
   if (typeof process !== "undefined" && process.env && process.env[key]) {
     const value = process.env[key];
-    console.log(`[env] ✓ ${key} encontrado em process.env`);
+    console.log(`[env] OK ${key} encontrado em process.env`);
     return value;
   }
 
   // 3. Tenta variáveis injetadas no build (fallback)
   if (SERVER_ENV && SERVER_ENV[key]) {
-    console.log(`[env] ✓ ${key} encontrado em SERVER_ENV`);
+    console.log(`[env] OK ${key} encontrado em SERVER_ENV`);
     return SERVER_ENV[key];
   }
 
-  console.warn(`[env] ✗ ${key} não encontrado`);
+  console.warn(`[env] ERRO ${key} não encontrado`);
   return undefined;
 }
 

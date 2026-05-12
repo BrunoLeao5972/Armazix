@@ -84,7 +84,7 @@ type BannerItem = {
 type SectionDef = {
   key: string;
   title: string;
-  emoji: string;
+  icon: React.ReactNode;
   products: Product[];
 };
 
@@ -306,13 +306,13 @@ export function PublicStoreView({
       {
         key: "ofertas",
         title: "Ofertas da Semana",
-        emoji: "🔥",
+        icon: <Flame className="h-5 w-5 text-orange-500" />,
         products: promoProducts,
       },
       {
         key: "mais-vendidos",
         title: "Mais Vendidos",
-        emoji: "⭐",
+        icon: <Star className="h-5 w-5 text-amber-500" />,
         products: bestSellerProducts,
       },
     ];
@@ -322,7 +322,7 @@ export function PublicStoreView({
       sections.push({
         key: name.toLowerCase(),
         title: name,
-        emoji: "🛍️",
+        icon: <Tags className="h-5 w-5 text-slate-500" />,
         products: list,
       });
     }
@@ -538,7 +538,7 @@ export function PublicStoreView({
               <ShowcaseRow
                 key={section.key}
                 title={section.title}
-                emoji={section.emoji}
+                icon={section.icon}
                 products={section.products}
                 slug={slug}
                 add={add}
@@ -650,7 +650,7 @@ function BenefitCard({
 
 function ShowcaseRow({
   title,
-  emoji,
+  icon,
   products,
   slug,
   add,
@@ -659,7 +659,7 @@ function ShowcaseRow({
   cartQtyById,
 }: {
   title: string;
-  emoji: string;
+  icon: React.ReactNode;
   products: Product[];
   slug: string;
   add: ReturnType<typeof useCart.getState>["add"];
@@ -673,7 +673,7 @@ function ShowcaseRow({
     <section>
       <div className="mb-3 flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-3xl font-black text-slate-950">
-          <span className="text-2xl">{emoji}</span>
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100">{icon}</span>
           {title}
         </h3>
         <div className="hidden items-center gap-2 md:flex">

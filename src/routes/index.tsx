@@ -19,6 +19,15 @@ import {
   ArrowRight,
   Play,
   Monitor,
+  Flame,
+  Coffee,
+  CakeSlice,
+  Shirt,
+  Sparkle,
+  Flower2,
+  Smartphone,
+  BookOpen,
+  UtensilsCrossed,
 } from "lucide-react";
 import heroImg from "@/assets/hero-entrepreneur.jpg";
 import dashboardImg from "@/assets/dashboard-preview.jpg";
@@ -188,7 +197,7 @@ function Landing() {
     },
     {
       name: "Pro",
-      badge: "O Mais escolhido🔥",
+      badge: "O Mais escolhido",
       price: "R$ 39,90",
       cadence: "/mes",
       perDay: "A partir de R$ 1,33/dia",
@@ -382,20 +391,22 @@ function Landing() {
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             {[
-              { e: "☕", n: "Cafeterias" },
-              { e: "🍰", n: "Confeitarias" },
-              { e: "👕", n: "Moda" },
-              { e: "💄", n: "Beleza" },
-              { e: "🌷", n: "Floriculturas" },
-              { e: "📱", n: "Eletrônicos" },
-              { e: "📚", n: "Livrarias" },
-              { e: "🥘", n: "Restaurantes" },
+              { icon: Coffee, n: "Cafeterias" },
+              { icon: CakeSlice, n: "Confeitarias" },
+              { icon: Shirt, n: "Moda" },
+              { icon: Sparkle, n: "Beleza" },
+              { icon: Flower2, n: "Floriculturas" },
+              { icon: Smartphone, n: "Eletrônicos" },
+              { icon: BookOpen, n: "Livrarias" },
+              { icon: UtensilsCrossed, n: "Restaurantes" },
             ].map((c) => (
               <div
                 key={c.n}
                 className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
               >
-                <span className="text-lg">{c.e}</span>
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                  <c.icon className="h-4 w-4" />
+                </span>
                 <span className="font-medium text-foreground">{c.n}</span>
               </div>
             ))}
@@ -910,7 +921,7 @@ function Landing() {
       <section className="mx-auto max-w-7xl px-6 py-24">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
-            Quem usa, recomenda 💚
+            Quem usa, recomenda
           </h2>
           <p className="mt-3 text-muted-foreground">
             Histórias reais de lojistas que decolaram com a Armazix.
