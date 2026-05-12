@@ -15,7 +15,10 @@ import {
   Calendar,
   ChevronRight,
   Settings,
-  Crown
+  Crown,
+  MessageCircle,
+  Camera,
+  Share2
 } from "lucide-react";
 
 export const Route = createFileRoute("/admin/")({
@@ -136,9 +139,15 @@ function AdminHome() {
               </div>
               <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
                 <div className="flex -space-x-2">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="h-6 w-6 rounded-full border-2 border-background bg-muted" />
-                  ))}
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-background bg-green-500 text-white">
+                    <MessageCircle className="h-3.5 w-3.5" />
+                  </div>
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-background bg-pink-500 text-white">
+                    <Camera className="h-3.5 w-3.5" />
+                  </div>
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-background bg-blue-600 text-white">
+                    <Share2 className="h-3.5 w-3.5" />
+                  </div>
                 </div>
                 <span>Compartilhe para começar a vender hoje!</span>
               </div>
