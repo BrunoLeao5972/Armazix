@@ -663,10 +663,55 @@ export const useTenant = create<TenantState>()(
           createdAt: Date.now(),
         };
 
-        const settingsPatch =
+        const settingsData =
           data.settings && typeof data.settings === "object"
-            ? (data.settings as Partial<Store>)
+            ? (data.settings as Record<string, unknown>)
             : {};
+
+        const settingsPatch = settingsData as Partial<Store>;
+
+        const productsFromSettings = Array.isArray(settingsData.products)
+          ? settingsData.products
+              .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
+              .map((item) => {
+                const parsedCode = Number(item.code ?? 0);
+                const parsedPrice = Number(item.price ?? 0);
+                const parsedStock = Number(item.stock ?? 0);
+                const parsedMinStock = Number(item.minStock ?? 0);
+
+                return {
+                  id: typeof item.id === "string" && item.id ? item.id : uid(),
+                  storeId: data.id,
+                  code: Number.isFinite(parsedCode) ? parsedCode : 0,
+                  name: typeof item.name === "string" ? item.name : "",
+                  description: typeof item.description === "string" ? item.description : "",
+                  price: Number.isFinite(parsedPrice) ? parsedPrice : 0,
+                  stock: Number.isFinite(parsedStock) ? parsedStock : 0,
+                  unit: typeof item.unit === "string" && item.unit ? item.unit : "UN",
+                  minStock: Number.isFinite(parsedMinStock) ? parsedMinStock : 0,
+                  category: typeof item.category === "string" ? item.category : "",
+                  image: typeof item.image === "string" ? item.image : "PROD",
+                  imageUrl: typeof item.imageUrl === "string" ? item.imageUrl : "",
+                  cost: typeof item.cost === "number" ? item.cost : undefined,
+                  trackStock: typeof item.trackStock === "boolean" ? item.trackStock : undefined,
+                  active: typeof item.active === "boolean" ? item.active : undefined,
+                  allowSellWithoutStock:
+                    typeof item.allowSellWithoutStock === "boolean"
+                      ? item.allowSellWithoutStock
+                      : undefined,
+                  featured: typeof item.featured === "boolean" ? item.featured : undefined,
+                  onPromotion: typeof item.onPromotion === "boolean" ? item.onPromotion : undefined,
+                  promotionPrice:
+                    typeof item.promotionPrice === "number" ? item.promotionPrice : undefined,
+                  images: Array.isArray(item.images)
+                    ? item.images.filter((image): image is string => typeof image === "string")
+                    : undefined,
+                  variations: Array.isArray(item.variations)
+                    ? (item.variations as ProductVariation[])
+                    : undefined,
+                } as Product;
+              })
+          : null;
 
         const baseStore = existingStore ? normalizeStore(existingStore) : defaultStore;
 
@@ -683,10 +728,19 @@ export const useTenant = create<TenantState>()(
           pdvEnabled: data.pdvEnabled ?? baseStore.pdvEnabled,
         });
 
+        const currentState = get();
+
         set({
-          stores: get().stores.some((s) => s.id === data.id)
-            ? get().stores.map((s) => (s.id === data.id ? merged : s))
-            : [...get().stores, merged],
+          stores: currentState.stores.some((s) => s.id === data.id)
+            ? currentState.stores.map((s) => (s.id === data.id ? merged : s))
+            : [...currentState.stores, merged],
+          products:
+            productsFromSettings !== null
+              ? [
+                  ...currentState.products.filter((product) => product.storeId !== data.id),
+                  ...productsFromSettings,
+                ]
+              : currentState.products,
         });
       },
       createStore: (ownerId, { name, slug, description }) => {

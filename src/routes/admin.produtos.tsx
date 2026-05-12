@@ -79,6 +79,8 @@ const emptyForm: ProductForm = {
 
 function ProductsPage() {
   const store = useCurrentStore();
+  const currentUserId = useAuth((s) => s.currentUserId);
+  const normalizedStore = useMemo(() => normalizeStore(store), [store]);
   const allProducts = useTenant((s) => s.products);
   const products = useMemo(
     () => allProducts.filter((p) => p.storeId === store.id),
@@ -98,6 +100,40 @@ function ProductsPage() {
   const [query, setQuery] = useState("");
   const [filterCat, setFilterCat] = useState("");
   const [limitErr, setLimitErr] = useState(false);
+  const [syncErr, setSyncErr] = useState("");
+
+  const persistProductsToServer = async () => {
+    if (!currentUserId) return;
+
+    const state = useTenant.getState();
+    const nextProducts = state.products.filter((p) => p.storeId === store.id);
+
+    await upsertStoreSettingsFn({
+      data: {
+        storeId: normalizedStore.id,
+        ownerUserId: currentUserId,
+        name: normalizedStore.name,
+        slug: normalizedStore.slug,
+        description: normalizedStore.description,
+        settings: {
+          logoUrl: normalizedStore.logoUrl,
+          banners: normalizedStore.banners,
+          taxId: normalizedStore.taxId,
+          cnpj: normalizedStore.cnpj,
+          address: normalizedStore.address,
+          addressInfo: normalizedStore.addressInfo,
+          businessHours: normalizedStore.businessHours,
+          phones: normalizedStore.phones,
+          whatsapp: normalizedStore.whatsapp,
+          categories: normalizedStore.categories,
+          delivery: normalizedStore.delivery,
+          payments: normalizedStore.payments,
+          pdvEnabled: normalizedStore.pdvEnabled,
+          products: nextProducts,
+        },
+      },
+    });
+  };
 
   const storeCategories = useMemo(
     () => (store.categories ?? []).slice().sort((a, b) => a.localeCompare(b)),
@@ -152,6 +188,12 @@ function ProductsPage() {
       {limitErr && (
         <div className="rounded-2xl border border-destructive/40 bg-destructive/8 px-5 py-4 text-sm text-destructive">
           Limite de produtos atingido para o seu plano atual.
+        </div>
+      )}
+
+      {syncErr && (
+        <div className="rounded-2xl border border-destructive/40 bg-destructive/8 px-5 py-4 text-sm text-destructive">
+          {syncErr}
         </div>
       )}
 
@@ -239,7 +281,17 @@ function ProductsPage() {
                       </button>
                       <button
                         onClick={() => {
-                          if (confirm(`Remover "${p.name}"?`)) removeProduct(p.id);
+                          if (!confirm(`Remover "${p.name}"?`)) return;
+
+                          setSyncErr("");
+                          removeProduct(p.id);
+                          void persistProductsToServer().catch((error) => {
+                            setSyncErr(
+                              error instanceof Error
+                                ? error.message
+                                : "Produto removido localmente, mas falhou ao sincronizar com o servidor.",
+                            );
+                          });
                         }}
                         className="rounded-full bg-background/90 p-1.5 text-destructive shadow-sm backdrop-blur hover:bg-background"
                         title="Remover"
@@ -326,11 +378,27 @@ function ProductsPage() {
           onClose={() => setOpen(false)}
           onSave={(data) => {
             if (editing) {
+              setSyncErr("");
               updateProduct(editing.id, data);
+              void persistProductsToServer().catch((error) => {
+                setSyncErr(
+                  error instanceof Error
+                    ? error.message
+                    : "Produto atualizado localmente, mas falhou ao sincronizar com o servidor.",
+                );
+              });
               setOpen(false);
             } else {
+              setSyncErr("");
               const result = addProduct(store.id, data);
               if (result.ok) {
+                void persistProductsToServer().catch((error) => {
+                  setSyncErr(
+                    error instanceof Error
+                      ? error.message
+                      : "Produto criado localmente, mas falhou ao sincronizar com o servidor.",
+                  );
+                });
                 setOpen(false);
               } else {
                 setLimitErr(true);
