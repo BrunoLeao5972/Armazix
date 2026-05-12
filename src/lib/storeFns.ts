@@ -51,6 +51,17 @@ function toSerializableJsonValue(value: unknown): JsonValue {
 }
 
 function toSerializableSettings(value: unknown): SerializableSettings {
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as SerializableSettings;
+      }
+    } catch {
+      return {};
+    }
+  }
+
   const jsonValue = toSerializableJsonValue(value);
   if (jsonValue && typeof jsonValue === "object" && !Array.isArray(jsonValue)) {
     return jsonValue as SerializableSettings;

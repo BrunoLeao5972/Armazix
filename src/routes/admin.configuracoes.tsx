@@ -50,6 +50,7 @@ function SettingsPage() {
   const currentUserId = useAuth((s) => s.currentUserId);
   const [form, setForm] = useState(() => normalizeStore(rawStore));
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [activeCategory, setActiveCategory] = useState<SettingsCategory>("dados");
   const [cepLookupLoading, setCepLookupLoading] = useState(false);
@@ -341,30 +342,40 @@ function SettingsPage() {
     ) {
       nextErrors.slug = "Este link da loja ja esta em uso.";
     }
-    if (taxDigits.length !== 11 && taxDigits.length !== 14) {
+    if (taxDigits.length > 0 && taxDigits.length !== 11 && taxDigits.length !== 14) {
       nextErrors.taxId = "Informe um CPF (11 digitos) ou CNPJ (14 digitos).";
     }
-    if (cepDigits.length !== 8) {
-      nextErrors.cep = "Informe um CEP valido com 8 digitos.";
-    }
-    if (form.addressInfo.street.trim().length < 3) {
-      nextErrors.street = "Informe o endereco.";
-    }
-    if (form.addressInfo.number.trim().length < 1) {
-      nextErrors.number = "Informe o numero.";
-    }
-    if (form.addressInfo.city.trim().length < 2) {
-      nextErrors.city = "Informe a cidade.";
-    }
-    if (form.addressInfo.state.trim().length !== 2) {
-      nextErrors.state = "Informe o estado com 2 letras (UF).";
+
+    const hasAnyAddressField = [
+      form.addressInfo.cep,
+      form.addressInfo.street,
+      form.addressInfo.number,
+      form.addressInfo.city,
+      form.addressInfo.state,
+      form.addressInfo.complement,
+    ].some((value) => value.trim().length > 0);
+
+    if (hasAnyAddressField) {
+      if (cepDigits.length !== 8) {
+        nextErrors.cep = "Informe um CEP valido com 8 digitos.";
+      }
+      if (form.addressInfo.street.trim().length < 3) {
+        nextErrors.street = "Informe o endereco.";
+      }
+      if (form.addressInfo.number.trim().length < 1) {
+        nextErrors.number = "Informe o numero.";
+      }
+      if (form.addressInfo.city.trim().length < 2) {
+        nextErrors.city = "Informe a cidade.";
+      }
+      if (form.addressInfo.state.trim().length !== 2) {
+        nextErrors.state = "Informe o estado com 2 letras (UF).";
+      }
     }
     if (form.description.length > 250) {
       nextErrors.description = "A descricao pode ter no maximo 250 caracteres.";
     }
-    if (validPhones.length === 0) {
-      nextErrors.phones = "Cadastre ao menos um telefone.";
-    } else {
+    if (validPhones.length > 0) {
       const invalidPhone = validPhones.some((p) => {
         const digits = onlyDigits(p);
         return digits.length !== 10 && digits.length !== 11;
@@ -423,9 +434,11 @@ function SettingsPage() {
       nextErrors.payments = "Selecione ao menos uma forma de pagamento.";
     }
     if (form.payments.pix) {
-      if (!form.payments.pixKey.trim() && !form.payments.pixQrCode) {
-        nextErrors.pixKey = "Informe a chave Pix ou envie o QR Code.";
-      }
+      const hasPixData =
+        form.payments.pixKey.trim().length > 0 ||
+        form.payments.pixQrCode.trim().length > 0 ||
+        form.payments.pixBank.trim().length > 0 ||
+        form.payments.pixReceiverName.trim().length > 0;
 
       if (form.payments.pixKey.trim()) {
         const pixDigits = onlyDigits(form.payments.pixKey);
@@ -454,10 +467,10 @@ function SettingsPage() {
         }
       }
 
-      if (!form.payments.pixBank.trim()) {
+      if (hasPixData && !form.payments.pixBank.trim()) {
         nextErrors.pixBank = "Informe o banco do recebedor.";
       }
-      if (!form.payments.pixReceiverName.trim()) {
+      if (hasPixData && !form.payments.pixReceiverName.trim()) {
         nextErrors.pixReceiverName = "Informe o nome do recebedor.";
       }
 
@@ -484,6 +497,7 @@ function SettingsPage() {
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaveError(null);
     const validation = validate();
     setErrors(validation);
     if (Object.keys(validation).length > 0) return;
@@ -550,7 +564,8 @@ function SettingsPage() {
             },
           },
         });
-      } catch {
+      } catch (error) {
+        setSaveError(error instanceof Error ? error.message : "Nao foi possivel salvar no servidor.");
         // Keep local save successful even if remote sync fails.
       }
     }
@@ -576,6 +591,7 @@ function SettingsPage() {
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Categorias</p>
             {saved && <p className="text-xs font-medium text-primary">Salvo com sucesso.</p>}
           </div>
+          {saveError && <p className="mb-2 px-1 text-xs font-medium text-destructive">{saveError}</p>}
           <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <button
               type="button"

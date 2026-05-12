@@ -620,6 +620,7 @@ export const useTenant = create<TenantState>()(
       upsertStoreFromServer: (data) => {
         const cleanSlug = normalizeSlug(data.slug);
         if (!cleanSlug) return;
+        const existingStore = get().stores.find((s) => s.id === data.id);
 
         const defaultStore: Store = {
           id: data.id,
@@ -667,17 +668,19 @@ export const useTenant = create<TenantState>()(
             ? (data.settings as Partial<Store>)
             : {};
 
+        const baseStore = existingStore ? normalizeStore(existingStore) : defaultStore;
+
         const merged = normalizeStore({
-          ...defaultStore,
+          ...baseStore,
           ...settingsPatch,
           id: data.id,
           ownerId: data.ownerUserId,
           name: data.name,
           slug: cleanSlug,
-          description: data.description ?? defaultStore.description,
-          plan: (data.plan as Plan) ?? defaultStore.plan,
-          pdvAccess: data.pdvAccess ?? defaultStore.pdvAccess,
-          pdvEnabled: data.pdvEnabled ?? defaultStore.pdvEnabled,
+          description: data.description ?? baseStore.description,
+          plan: (data.plan as Plan) ?? baseStore.plan,
+          pdvAccess: data.pdvAccess ?? baseStore.pdvAccess,
+          pdvEnabled: data.pdvEnabled ?? baseStore.pdvEnabled,
         });
 
         set({
