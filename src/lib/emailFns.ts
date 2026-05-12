@@ -24,18 +24,22 @@ const emailCodeSchema = z.object({
 type EmailCodeInput = z.infer<typeof emailCodeSchema>;
 
 // ============================================================================
-// Configuração SMTP
+// Configuração SMTP - Titan HostGator Otimizado
 // ============================================================================
 
 const SMTP_CONFIG = {
-  host: process.env.MAIL_HOST || "smtp.gmail.com",
-  port: parseInt(process.env.MAIL_PORT || "587"),
-  secure: process.env.MAIL_SECURE === "true",
+  host: process.env.MAIL_HOST || "mail.armazix.com.br",
+  port: parseInt(process.env.MAIL_PORT || "465"),
+  secure: process.env.MAIL_SECURE !== "false", // Padrão true para Titan
   auth: {
     user: process.env.MAIL_USERNAME || "",
     pass: process.env.MAIL_PASSWORD || "",
   },
   from: process.env.MAIL_FROM || "noreply@armazix.com.br",
+  // Titan específico
+  tls: {
+    rejectUnauthorized: false, // Para evitar erro de certificado do Titan
+  },
 };
 
 // ============================================================================
@@ -79,20 +83,26 @@ async function sendEmailViaSMTP(
         user: SMTP_CONFIG.auth.user,
         pass: SMTP_CONFIG.auth.pass,
       },
+      tls: SMTP_CONFIG.tls,
     });
 
+    // IMPORTANTE: Enviar como HTML, não como texto!
     const info = await transporter.sendMail({
       from: SMTP_CONFIG.from,
       to,
       subject,
-      html,
+      html, // ✅ HTML (não text!)
+      // Importante para garantir que seja HTML
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+      },
     });
 
-    console.log(`✉️ Email enviado: ${info.messageId}`);
+    console.log(`✉️ Email enviado com sucesso: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
-    console.error("❌ Erro ao enviar email:", errorMessage);
+    console.error("❌ Erro ao enviar email via SMTP:", errorMessage);
     return { success: false, error: errorMessage };
   }
 }

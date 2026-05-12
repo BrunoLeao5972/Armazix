@@ -20,6 +20,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as LojaSlugRouteImport } from './routes/loja.$slug'
+import { Route as DebugStoresRouteImport } from './routes/debug.stores'
 import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
 import { Route as AdminProdutosRouteImport } from './routes/admin.produtos'
 import { Route as AdminPlanoRouteImport } from './routes/admin.plano'
@@ -84,6 +85,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const LojaSlugRoute = LojaSlugRouteImport.update({
   id: '/loja/$slug',
   path: '/loja/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DebugStoresRoute = DebugStoresRouteImport.update({
+  id: '/debug/stores',
+  path: '/debug/stores',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
@@ -155,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/admin/plano': typeof AdminPlanoRoute
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
+  '/debug/stores': typeof DebugStoresRoute
   '/loja/$slug': typeof LojaSlugRouteWithChildren
   '/admin/': typeof AdminIndexRoute
   '/api/mercadopago/webhook': typeof ApiMercadopagoWebhookRoute
@@ -177,6 +184,7 @@ export interface FileRoutesByTo {
   '/admin/plano': typeof AdminPlanoRoute
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
+  '/debug/stores': typeof DebugStoresRoute
   '/loja/$slug': typeof LojaSlugRouteWithChildren
   '/admin': typeof AdminIndexRoute
   '/api/mercadopago/webhook': typeof ApiMercadopagoWebhookRoute
@@ -201,6 +209,7 @@ export interface FileRoutesById {
   '/admin/plano': typeof AdminPlanoRoute
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
+  '/debug/stores': typeof DebugStoresRoute
   '/loja/$slug': typeof LojaSlugRouteWithChildren
   '/admin/': typeof AdminIndexRoute
   '/api/mercadopago/webhook': typeof ApiMercadopagoWebhookRoute
@@ -226,6 +235,7 @@ export interface FileRouteTypes {
     | '/admin/plano'
     | '/admin/produtos'
     | '/admin/usuarios'
+    | '/debug/stores'
     | '/loja/$slug'
     | '/admin/'
     | '/api/mercadopago/webhook'
@@ -248,6 +258,7 @@ export interface FileRouteTypes {
     | '/admin/plano'
     | '/admin/produtos'
     | '/admin/usuarios'
+    | '/debug/stores'
     | '/loja/$slug'
     | '/admin'
     | '/api/mercadopago/webhook'
@@ -271,6 +282,7 @@ export interface FileRouteTypes {
     | '/admin/plano'
     | '/admin/produtos'
     | '/admin/usuarios'
+    | '/debug/stores'
     | '/loja/$slug'
     | '/admin/'
     | '/api/mercadopago/webhook'
@@ -288,6 +300,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   VerificarEmailRoute: typeof VerificarEmailRoute
+  DebugStoresRoute: typeof DebugStoresRoute
   LojaSlugRoute: typeof LojaSlugRouteWithChildren
   ApiMercadopagoWebhookRoute: typeof ApiMercadopagoWebhookRoute
 }
@@ -369,6 +382,13 @@ declare module '@tanstack/react-router' {
       path: '/loja/$slug'
       fullPath: '/loja/$slug'
       preLoaderRoute: typeof LojaSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/debug/stores': {
+      id: '/debug/stores'
+      path: '/debug/stores'
+      fullPath: '/debug/stores'
+      preLoaderRoute: typeof DebugStoresRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/usuarios': {
@@ -492,6 +512,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   VerificarEmailRoute: VerificarEmailRoute,
+  DebugStoresRoute: DebugStoresRoute,
   LojaSlugRoute: LojaSlugRouteWithChildren,
   ApiMercadopagoWebhookRoute: ApiMercadopagoWebhookRoute,
 }
