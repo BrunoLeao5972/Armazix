@@ -163,9 +163,9 @@ export const createStoreFn = createServerFn({ method: "POST" })
         name: z.string().min(1, "Nome é obrigatório").max(100),
         slug: z
           .string()
-          .min(1, "Slug é obrigatório")
+          .min(1, "Endereço é obrigatório")
           .max(100)
-          .regex(/^[a-z0-9]+$/, "Slug inválido"),
+          .regex(/^[a-z0-9]+$/, "Endereço inválido"),
         description: z.string().max(500).default(""),
         ownerUserId: z.string().uuid("ID de usuário inválido"),
       })
@@ -174,14 +174,25 @@ export const createStoreFn = createServerFn({ method: "POST" })
     const db = getDb();
 
     // Check if slug is already taken
-    const existing = await db
+    const existingSlug = await db
       .select({ id: stores.id })
       .from(stores)
       .where(eq(stores.slug, parsed.slug))
       .limit(1);
 
-    if (existing.length > 0) {
-      throw new Error("Slug já em uso");
+    if (existingSlug.length > 0) {
+      throw new Error("Este endereço da loja já está em uso");
+    }
+
+    // Check if name is already taken
+    const existingName = await db
+      .select({ id: stores.id })
+      .from(stores)
+      .where(eq(stores.name, parsed.name.trim()))
+      .limit(1);
+
+    if (existingName.length > 0) {
+      throw new Error("Este nome de loja já está em uso");
     }
 
     let store: StorePayload | undefined;
@@ -211,6 +222,17 @@ export const createStoreFn = createServerFn({ method: "POST" })
         store = mapStorePayload(created);
       }
     } catch (error) {
+      // Handle database constraint violations
+      const errorMessage = error instanceof Error ? error.message : "";
+      
+      if (errorMessage.includes("stores_slug_unique") || errorMessage.includes("slug")) {
+        throw new Error("Este endereço da loja já está em uso");
+      }
+      
+      if (errorMessage.includes("stores_name_unique") || errorMessage.includes("name")) {
+        throw new Error("Este nome de loja já está em uso");
+      }
+
       if (!isMissingSettingsColumnError(error)) throw error;
 
       const fallback = await db.execute(sql`
@@ -451,7 +473,7 @@ export const upsertStoreSettingsFn = createServerFn({ method: "POST" })
         storeId: z.string().uuid("ID da loja inválido"),
         ownerUserId: z.string().uuid("ID de usuário inválido"),
         name: z.string().min(1, "Nome é obrigatório").max(100),
-        slug: z.string().min(1).max(100).regex(/^[a-z0-9]+$/, "Slug inválido"),
+        slug: z.string().min(1).max(100).regex(/^[a-z0-9]+$/, "Endereço inválido"),
         description: z.string().max(500).default(""),
         settings: z.record(z.any()).default({}),
       })
@@ -466,7 +488,7 @@ export const upsertStoreSettingsFn = createServerFn({ method: "POST" })
       .limit(1);
 
     if (conflict.length > 0 && conflict[0].id !== parsed.storeId) {
-      throw new Error("Slug já em uso");
+      throw new Error("Este endereço da loja já está em uso");
     }
 
     const existing = await db

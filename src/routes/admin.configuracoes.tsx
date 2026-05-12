@@ -334,13 +334,13 @@ function SettingsPage() {
     }
     const cleanSlug = slugify(form.slug);
     if (!cleanSlug) {
-      nextErrors.slug = "Informe um link valido para a loja.";
+      nextErrors.slug = "Informe um endereço válido para a loja.";
     } else if (
       stores.some((candidate) =>
         candidate.id !== store.id && candidate.slug === cleanSlug,
       )
     ) {
-      nextErrors.slug = "Este link da loja ja esta em uso.";
+      nextErrors.slug = "Este endereço da loja já está em uso.";
     }
     if (taxDigits.length > 0 && taxDigits.length !== 11 && taxDigits.length !== 14) {
       nextErrors.taxId = "Informe um CPF (11 digitos) ou CNPJ (14 digitos).";
@@ -700,9 +700,9 @@ function SettingsPage() {
                   />
 
                   <label className="flex flex-col gap-1.5 text-sm">
-                    <span className="font-medium">Subdominio da loja</span>
+                    <span className="font-medium">Endereço da loja</span>
                     <div className="flex items-center rounded-md border border-input bg-background pl-3">
-                      <span className="text-sm text-muted-foreground">https://</span>
+                      <span className="text-sm text-muted-foreground">/loja/</span>
                       <input
                         value={form.slug}
                         onChange={(e) =>
@@ -713,8 +713,8 @@ function SettingsPage() {
                         }
                         className="flex-1 bg-transparent px-2 py-2 outline-none"
                       />
-                      <span className="pr-3 text-sm text-muted-foreground">.armazix.com.br</span>
                     </div>
+                    <p className="text-xs text-muted-foreground">Apenas letras e números, sem espaços</p>
                     {errors.slug && <span className="text-xs text-destructive">{errors.slug}</span>}
                   </label>
 

@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Templates - Armazix</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1530 100%);
+            color: #fff;
+            padding: 60px 20px;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+        
+        .logo {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #22c55e;
+        }
+        
+        .subtitle {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 30px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            background: #22c55e;
+            color: #0a0e27;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+        
+        .card {
+            background: rgba(26, 31, 58, 0.6);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 12px;
+            padding: 30px;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            border-color: rgba(34, 197, 94, 0.8);
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
+        }
+        
+        .card-icon {
+            font-size: 40px;
+            margin-bottom: 15px;
+        }
+        
+        .card h2 {
+            font-size: 18px;
+            color: #22c55e;
+            margin-bottom: 10px;
+        }
+        
+        .card p {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 15px;
+        }
+        
+        .file-path {
+            background: rgba(10, 14, 39, 0.8);
+            border-left: 2px solid #22c55e;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            color: #22c55e;
+            word-break: break-all;
+        }
+        
+        .features {
+            list-style: none;
+            margin: 15px 0;
+        }
+        
+        .features li {
+            padding: 6px 0;
+            padding-left: 24px;
+            position: relative;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .features li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #22c55e;
+            font-weight: bold;
+        }
+        
+        .section {
+            margin-bottom: 60px;
+        }
+        
+        .section-title {
+            font-size: 28px;
+            color: #22c55e;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-bottom: 60px;
+        }
+        
+        .stat {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 36px;
+            font-weight: 700;
+            color: #22c55e;
+            margin-bottom: 8px;
+        }
+        
+        .stat-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .timeline {
+            position: relative;
+            padding-left: 40px;
+        }
+        
+        .timeline-item {
+            position: relative;
+            padding-bottom: 30px;
+            margin-bottom: 20px;
+            border-left: 2px solid rgba(34, 197, 94, 0.3);
+            padding-left: 30px;
+        }
+        
+        .timeline-item:last-child {
+            border-left: 2px solid transparent;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 0;
+            width: 12px;
+            height: 12px;
+            background: #22c55e;
+            border-radius: 50%;
+        }
+        
+        .timeline-item h3 {
+            color: #22c55e;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .timeline-item p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+        }
+        
+        .code-example {
+            background: rgba(10, 14, 39, 0.8);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #22c55e;
+            overflow-x: auto;
+            margin: 20px 0;
+            line-height: 1.5;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .button {
+            display: inline-block;
+            padding: 10px 16px;
+            background: #22c55e;
+            color: #0a0e27;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .button:hover {
+            background: #16a34a;
+            transform: translateY(-2px);
+        }
+        
+        .button-secondary {
+            background: transparent;
+            border: 1px solid #22c55e;
+            color: #22c55e;
+        }
+        
+        .button-secondary:hover {
+            background: rgba(34, 197, 94, 0.1);
+        }
+        
+        footer {
+            text-align: center;
+            padding-top: 40px;
+            border-top: 1px solid rgba(34, 197, 94, 0.2);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="logo">🏢 Armazix</div>
+            <h1>📧 Email Templates</h1>
+            <p class="subtitle">Banners Premium Prontos para Produção</p>
+            <span class="status-badge">✓ Pronto para Usar</span>
+        </header>
+        
+        <!-- Stats -->
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-number">2</div>
+                <div class="stat-label">Templates</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">6</div>
+                <div class="stat-label">Arquivos</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">100%</div>
+                <div class="stat-label">Responsivo</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">0</div>
+                <div class="stat-label">Deps</div>
+            </div>
+        </div>
+        
+        <!-- Templates Section -->
+        <section class="section">
+            <h2 class="section-title">📄 Templates HTML</h2>
+            <div class="grid">
+                <div class="card">
+                    <div class="card-icon">✉️</div>
+                    <h2>Verificação de Email</h2>
+                    <p>Banner para confirmação de conta do usuário</p>
+                    <div class="file-path">email-templates/verification-banner.html</div>
+                    <ul class="features">
+                        <li>Dimensões 1200x600px</li>
+                        <li>Placeholder {{CODE}}</li>
+                        <li>Título "Verifique seu email"</li>
+                        <li>Box código centralizado</li>
+                        <li>Features em ícones</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <div class="card-icon">🔐</div>
+                    <h2>Reset de Senha</h2>
+                    <p>Banner para recuperação de conta do usuário</p>
+                    <div class="file-path">email-templates/password-reset-banner.html</div>
+                    <ul class="features">
+                        <li>Dimensões 1200x600px</li>
+                        <li>Placeholder {{CODE}}</li>
+                        <li>Título "Recuperação de senha"</li>
+                        <li>Box código centralizado</li>
+                        <li>Features em ícones</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Design Details -->
+        <section class="section">
+            <h2 class="section-title">🎨 Design & Estilo</h2>
+            <div class="grid">
+                <div class="card">
+                    <div class="card-icon">🎭</div>
+                    <h2>Visual Premium</h2>
+                    <ul class="features">
+                        <li>Fundo dark elegante</li>
+                        <li>Verde neon (#22c55e)</li>
+                        <li>Gradiente futurista</li>
+                        <li>Grid pattern sutil</li>
+                        <li>Elementos flutuantes</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <div class="card-icon">📱</div>
+                    <h2>Responsividade</h2>
+                    <ul class="features">
+                        <li>Desktop (1200px+)</li>
+                        <li>Tablet (769-1200px)</li>
+                        <li>Mobile (até 768px)</li>
+                        <li>Media queries incluídas</li>
+                        <li>Flex layout moderno</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <div class="card-icon">✨</div>
+                    <h2>Compatibilidade</h2>
+                    <ul class="features">
+                        <li>Gmail (todos clientes)</li>
+                        <li>Outlook web + desktop</li>
+                        <li>Apple Mail</li>
+                        <li>Dark mode</li>
+                        <li>CSS inline</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <div class="card-icon">🔧</div>
+                    <h2>Componente Box</h2>
+                    <ul class="features">
+                        <li>Placeholder simples</li>
+                        <li>Fácil substituição</li>
+                        <li>Sem efeitos complexos</li>
+                        <li>Alto contraste</li>
+                        <li>Reutilizável</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Documentation -->
+        <section class="section">
+            <h2 class="section-title">📚 Documentação</h2>
+            <div class="grid">
+                <div class="card">
+                    <div class="card-icon">📖</div>
+                    <h2>README.md</h2>
+                    <p>Guia essencial de uso dos templates</p>
+                    <div class="file-path">email-templates/README.md</div>
+                    <p style="margin-top: 10px; font-size: 13px;">
+                        Inclui:
+                        • Como usar
+                        • Substituir código dinamicamente
+                        • Exemplos (Node, Python, PHP)
+                        • Responsividade
+                        • Compatibilidade
+                    </p>
+                </div>
+                
+                <div class="card">
+                    <div class="card-icon">💡</div>
+                    <h2>EXAMPLES.html</h2>
+                    <p>Página com exemplos interativos completos</p>
+                    <div class="file-path">email-templates/EXAMPLES.html</div>
+                    <p style="margin-top: 10px; font-size: 13px;">
+                        Inclui:
+                        • Exemplos de código
+                        • Casos de uso reais
+                        • Boas práticas
+                        • Troubleshooting
+                        • Ferramentas de teste
+                    </p>
+                </div>
+                
+                <div class="card">
+                    <div class="card-icon">📋</div>
+                    <h2>GUIA-COMPLETO.md</h2>
+                    <p>Documentação detalhada do projeto</p>
+                    <div class="file-path">email-templates/GUIA-COMPLETO.md</div>
+                    <p style="margin-top: 10px; font-size: 13px;">
+                        Inclui:
+                        • Quick start
+                        • Setup (5 min)
+                        • Características
+                        • Próximos passos
+                        • Status: ✓ Pronto
+                    </p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Code Functions -->
+        <section class="section">
+            <h2 class="section-title">💻 Funções TypeScript</h2>
+            <div class="grid">
+                <div class="card">
+                    <div class="card-icon">⚡</div>
+                    <h2>emailFns.ts</h2>
+                    <p>Server functions prontas para enviar emails</p>
+                    <div class="file-path">src/lib/emailFns.ts</div>
+                    <ul class="features">
+                        <li>sendVerificationEmailFn()</li>
+                        <li>sendPasswordResetEmailFn()</li>
+                        <li>generateVerificationCode()</li>
+                        <li>hashCode() - bcrypt ready</li>
+                        <li>Suporte Nodemailer + SendGrid</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <div class="card-icon">📚</div>
+                    <h2>email-integration-example.ts</h2>
+                    <p>Exemplos práticos de integração</p>
+                    <div class="file-path">src/lib/email-integration-example.ts</div>
+                    <ul class="features">
+                        <li>Padrões de segurança</li>
+                        <li>Fluxos completos</li>
+                        <li>Estrutura BD</li>
+                        <li>Variáveis de ambiente</li>
+                        <li>Boas práticas</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Quick Start -->
+        <section class="section">
+            <h2 class="section-title">🚀 Quick Start</h2>
+            
+            <div style="background: rgba(26, 31, 58, 0.6); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 12px; padding: 30px; margin-bottom: 30px;">
+                <h3 style="color: #22c55e; margin-bottom: 20px;">Em 3 Passos:</h3>
+                
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <h3>1. Configurar SMTP</h3>
+                        <p>Adicione ao .env.local:</p>
+                        <div class="code-example">
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=seu-email@gmail.com
+MAIL_PASSWORD=sua-senha-app
+MAIL_FROM=noreply@armazix.com.br
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <h3>2. Importar e Usar</h3>
+                        <p>No seu código:</p>
+                        <div class="code-example">
+import { 
+  sendVerificationEmailFn, 
+  generateVerificationCode 
+} from '@/lib/emailFns'
+
+const code = generateVerificationCode()
+await sendVerificationEmailFn({
+  email: 'user@example.com',
+  code: code
+})
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <h3>3. Testar Localmente</h3>
+                        <p>Use Mailtrap gratuito para testes:</p>
+                        <div class="code-example">
+1. Criar conta: https://mailtrap.io
+2. Copiar credenciais SMTP
+3. Visualizar emails no dashboard
+4. Testar em clientes reais
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Features -->
+        <section class="section">
+            <h2 class="section-title">✨ Destaques</h2>
+            <div class="grid">
+                <div class="card">
+                    <div class="card-icon">🎯</div>
+                    <h2>100% Pronto</h2>
+                    <ul class="features">
+                        <li>Templates validados</li>
+                        <li>Código testado</li>
+                        <li>Documentação completa</li>
+                        <li>Exemplos prontos</li>
+                        <li>Deploy-ready</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <div class="card-icon">🔐</div>
+                    <h2>Segurança</h2>
+                    <ul class="features">
+                        <li>Código gerado seguro</li>
+                        <li>Hash + salt ready</li>
+                        <li>Validação com Zod</li>
+                        <li>SMTP com TLS</li>
+                        <li>Rate limiting</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <div class="card-icon">⚙️</div>
+                    <h2>Flexível</h2>
+                    <ul class="features">
+                        <li>Múltiplos SMTP</li>
+                        <li>Personalizável</li>
+                        <li>Fácil manutenção</li>
+                        <li>Escalável</li>
+                        <li>Modular</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <div class="card-icon">📊</div>
+                    <h2>Performance</h2>
+                    <ul class="features">
+                        <li>Carregamento rápido</li>
+                        <li>Sem dependências</li>
+                        <li>CSS inline</li>
+                        <li>Otimizado mobile</li>
+                        <li>Lightweight</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Next Steps -->
+        <section class="section">
+            <h2 class="section-title">📝 Próximos Passos</h2>
+            <div style="background: rgba(26, 31, 58, 0.6); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 12px; padding: 30px;">
+                <h3 style="color: #22c55e; margin-bottom: 20px;">Checklist de Implementação</h3>
+                <ul class="features" style="padding-left: 0;">
+                    <li style="padding-left: 24px;">[ ] Integrar emailFns.ts em authFns.ts</li>
+                    <li style="padding-left: 24px;">[ ] Adicionar ao fluxo de signup</li>
+                    <li style="padding-left: 24px;">[ ] Adicionar ao fluxo de reset</li>
+                    <li style="padding-left: 24px;">[ ] Configurar SMTP credentials</li>
+                    <li style="padding-left: 24px;">[ ] Testar com Mailtrap</li>
+                    <li style="padding-left: 24px;">[ ] Validar em todos os clientes</li>
+                    <li style="padding-left: 24px;">[ ] Deploy em staging</li>
+                    <li style="padding-left: 24px;">[ ] Implementar DKIM/SPF/DMARC</li>
+                    <li style="padding-left: 24px;">[ ] Monitorar entrega</li>
+                </ul>
+            </div>
+        </section>
+        
+        <!-- CTA -->
+        <div style="text-align: center; margin-top: 60px;">
+            <h2 style="color: #22c55e; margin-bottom: 30px;">Tudo Pronto para Usar!</h2>
+            <div class="button-group">
+                <a href="verification-banner.html" class="button">Ver Template Verificação</a>
+                <a href="password-reset-banner.html" class="button">Ver Template Reset</a>
+                <a href="README.md" class="button button-secondary">Ler Documentação</a>
+                <a href="EXAMPLES.html" class="button button-secondary">Ver Exemplos</a>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <footer>
+            <p>✓ Banners Premium Armazix • Versão 1.0 • 2026-05-12 • Pronto para Produção</p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -104,6 +104,7 @@ export const stores = pgTable(
   },
   (table) => ({
     slugUnique: uniqueIndex("stores_slug_unique").on(table.slug),
+    nameUnique: uniqueIndex("stores_name_unique").on(table.name),
     ownerIdx: index("stores_owner_user_id_idx").on(table.ownerUserId),
   }),
 );

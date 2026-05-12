@@ -89,7 +89,7 @@ function OnboardingPage() {
             />
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium">Link da loja</span>
+            <span className="font-medium">Endereço da loja</span>
             <div className="flex items-center rounded-md border border-input bg-background pl-3">
               <span className="text-sm text-muted-foreground">/loja/</span>
               <input
@@ -101,6 +101,7 @@ function OnboardingPage() {
                 className="flex-1 bg-transparent px-2 py-2 outline-none"
               />
             </div>
+            <p className="text-xs text-muted-foreground">Apenas letras e números, sem espaços</p>
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium">Descrição curta</span>
