@@ -11,7 +11,6 @@ import {
   type StoreBanner,
   useAuth,
   useTenant,
-  type Store,
 } from "@/lib/store";
 import { upsertStoreSettingsFn } from "@/lib/storeFns";
 import { useCurrentStore } from "./admin";
@@ -47,7 +46,6 @@ function SettingsPage() {
   const rawStore = useCurrentStore();
   const store = useMemo(() => normalizeStore(rawStore), [rawStore]);
   const updateStore = useTenant((s) => s.updateStore);
-  const upsertStoreFromServerFn = useTenant((s) => s.upsertStoreFromServer);
   const stores = useTenant((s) => s.stores);
   const currentUserId = useAuth((s) => s.currentUserId);
   const [form, setForm] = useState(() => normalizeStore(rawStore));
@@ -528,7 +526,7 @@ function SettingsPage() {
 
     if (currentUserId) {
       try {
-        const result = await upsertStoreSettingsFn({
+        await upsertStoreSettingsFn({
           data: {
             storeId: store.id,
             ownerUserId: currentUserId,
@@ -552,20 +550,6 @@ function SettingsPage() {
             },
           },
         });
-        // Sync server response back to Zustand to ensure persistence
-        if (result) {
-          upsertStoreFromServerFn({
-            id: result.id,
-            ownerUserId: result.ownerUserId,
-            name: result.name,
-            slug: result.slug,
-            description: result.description,
-            plan: result.plan || "free",
-            pdvAccess: result.pdvAccess,
-            pdvEnabled: result.pdvEnabled,
-            settings: result.settings,
-          });
-        }
       } catch {
         // Keep local save successful even if remote sync fails.
       }
