@@ -15,12 +15,11 @@ export default defineConfig({
 		react(),
 		tsConfigPaths(),
 	],
-	resolve: {
-		alias: {
-			"node:stream": "stream-browserify",
-			"node:stream/web": "stream-browserify",
-			"node:async_hooks": "async-hooks-browserify",
-		},
+	ssr: {
+		external: ["node:stream", "node:stream/web", "node:async_hooks"],
+	},
+	optimizeDeps: {
+		exclude: ["@tanstack/router-core"],
 	},
 	build: {
 		rollupOptions: {
