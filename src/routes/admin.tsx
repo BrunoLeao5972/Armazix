@@ -5,6 +5,7 @@ import {
   redirect,
   useRouterState,
 } from "@tanstack/react-router";
+import { useEffect } from "react";
 import {
   useAuth,
   useTenant,
@@ -13,6 +14,7 @@ import {
   selectOrdersOfStore,
   type Store,
 } from "@/lib/store";
+import { syncStoreToDbFn } from "@/lib/storeFns";
 import { getPublicStoreUrl } from "@/lib/domain";
 import {
   LayoutDashboard,
@@ -86,6 +88,21 @@ function AdminLayout() {
   );
   const store = storeFromState;
   const path = useRouterState({ select: (s) => s.location.pathname });
+
+  useEffect(() => {
+    if (userId && store) {
+      syncStoreToDbFn({
+        data: {
+          name: store.name,
+          slug: store.slug,
+          description: store.description || "",
+          ownerUserId: userId,
+        },
+      }).catch(() => {
+        // ignorar erros de sincronização silenciosa
+      });
+    }
+  }, [userId, store]);
 
   if (!authHydrated || !tenantHydrated || !userId || !store) {
     return (

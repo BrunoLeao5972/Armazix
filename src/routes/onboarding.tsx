@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { PlatformHeader } from "@/components/PlatformHeader";
 import { useAuth, useTenant, selectStoreOfUser } from "@/lib/store";
+import { createStoreFn } from "@/lib/storeFns";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
@@ -29,13 +30,27 @@ function OnboardingPage() {
   const slugify = (v: string) =>
     v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr("");
-    const r = createStore(userId, form);
-    if (!r.ok) return setErr(r.error);
-    attachStore(userId, r.storeId);
-    navigate({ to: "/admin" });
+
+    try {
+      const serverStore = await createStoreFn({
+        data: {
+          name: form.name,
+          slug: form.slug,
+          description: form.description,
+          ownerUserId: userId,
+        },
+      });
+
+      const r = createStore(userId, form);
+      if (!r.ok) return setErr(r.error);
+      attachStore(userId, serverStore.id);
+      navigate({ to: "/admin" });
+    } catch (error: any) {
+      setErr(error?.message || "Erro ao criar loja. Tente novamente.");
+    }
   };
 
   return (

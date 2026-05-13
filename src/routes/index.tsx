@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
+import { getRequest } from "@tanstack/react-start-server";
 import { PlatformHeader } from "@/components/PlatformHeader";
 import { PublicStoreView } from "@/components/PublicStoreView";
-import { getStoreSlugFromWindowHost } from "@/lib/domain";
+import { getStoreSlugFromWindowHost, getStoreSlugFromHostname } from "@/lib/domain";
+import { getStoreBySlugFn } from "@/lib/storeFns";
 import {
   Check,
   Package,
@@ -24,6 +26,24 @@ import dashboardImg from "@/assets/dashboard-preview.jpg";
 import productsImg from "@/assets/products-flatlay.jpg";
 
 export const Route = createFileRoute("/")({
+  loader: async () => {
+    try {
+      const request = getRequest();
+      if (request) {
+        const url = new URL(request.url);
+        const slug = getStoreSlugFromHostname(url.hostname);
+        if (slug) {
+          const store = await getStoreBySlugFn({ data: slug });
+          if (store) {
+            return { storeSlug: slug, store };
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return { storeSlug: null as string | null, store: null };
+  },
   head: () => ({
     meta: [
       { title: "Armazix — Crie sua loja online em minutos" },
@@ -45,18 +65,22 @@ export const Route = createFileRoute("/")({
 });
 
 function Landing() {
+  const loaderData = Route.useLoaderData();
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
   }, []);
-  const hostSlug = mounted ? getStoreSlugFromWindowHost() : null;
+
+  const hostSlug = loaderData.storeSlug ?? (mounted ? getStoreSlugFromWindowHost() : null);
   const [pdvOn, setPdvOn] = useState<Record<string, boolean>>({});
+
   if (hostSlug) {
     return (
       <PublicStoreView
         slug={hostSlug}
         rootHref="/"
         checkoutHref={`/loja/${hostSlug}/checkout`}
+        serverData={loaderData.store ? { store: loaderData.store as any, products: [] } : undefined}
       />
     );
   }
