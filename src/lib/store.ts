@@ -221,6 +221,7 @@ type AuthState = {
   login: (email: string, password: string) =>
     | { ok: true; userId: string }
     | { ok: false; error: string };
+  setCurrentUser: (userId: string | null) => void;
   logout: () => void;
   attachStore: (userId: string, storeId: string) => void;
 };
@@ -246,6 +247,7 @@ export const useAuth = create<AuthState>()(
         return { ok: true, userId: u.id };
       },
       logout: () => set({ currentUserId: null }),
+      setCurrentUser: (userId) => set({ currentUserId: userId }),
       attachStore: (userId, storeId) =>
         set({
           users: get().users.map((u) =>

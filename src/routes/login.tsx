@@ -1,8 +1,8 @@
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useAuth, useTenant } from "@/lib/store";
+import { useAuth, useTenant, selectStoreOfUser } from "@/lib/store";
 import { loginFn } from "@/lib/authFns";
-import { getStoreByOwnerFn } from "@/lib/storeFns";
+import { getStoreByOwnerFn, syncStoreToDbFn } from "@/lib/storeFns";
 import { PlatformHeader } from "@/components/PlatformHeader";
 import { 
   ArrowRight, 
@@ -35,8 +35,9 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
-  const setSession = useAuth((s) => s.setSession);
+  const setCurrentUser = useAuth((s) => s.setCurrentUser);
   const upsertStoreFromServer = useTenant((s) => s.upsertStoreFromServer);
+  const localStore = useTenant((s) => s.stores[0] ?? null);
   const [form, setForm] = useState({ email: "", password: "" });
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,21 +49,31 @@ function LoginPage() {
 
     try {
       const result = await loginFn({ data: form });
-      setSession(result.userId, result.name, result.sessionToken);
+      setCurrentUser(result.userId);
 
       const serverStore = await getStoreByOwnerFn({ data: result.userId });
 
       if (serverStore) {
         upsertStoreFromServer({
           id: serverStore.id,
-          ownerUserId: serverStore.ownerUserId,
+          ownerId: serverStore.ownerUserId,
           name: serverStore.name,
           slug: serverStore.slug,
           description: serverStore.description,
           plan: serverStore.plan,
           pdvAccess: serverStore.pdvAccess,
           pdvEnabled: serverStore.pdvEnabled,
-          settings: serverStore.settings,
+        });
+        navigate({ to: "/admin" });
+      } else if (localStore) {
+        // Loja existe localmente (Zustand) mas nao no DB — sincroniza
+        await syncStoreToDbFn({
+          data: {
+            name: localStore.name,
+            slug: localStore.slug,
+            description: localStore.description,
+            ownerUserId: result.userId,
+          },
         });
         navigate({ to: "/admin" });
       } else {
