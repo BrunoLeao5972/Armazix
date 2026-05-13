@@ -10,9 +10,21 @@ export default defineConfig({
 	plugins: [
 		tailwindcss(),
 		envInjectPlugin(),
-		cloudflare({ viteEnvironment: { name: "ssr" } }),
 		tanstackStart(),
+		cloudflare({ viteEnvironment: { name: "ssr" } }),
 		react(),
 		tsConfigPaths(),
 	],
+	resolve: {
+		alias: {
+			"node:stream": "stream-browserify",
+			"node:stream/web": "stream-browserify",
+			"node:async_hooks": "async-hooks-browserify",
+		},
+	},
+	build: {
+		rollupOptions: {
+			external: ["node:stream", "node:stream/web", "node:async_hooks"],
+		},
+	},
 });
