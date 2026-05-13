@@ -134,6 +134,45 @@ export const getStoreByOwnerFn = createServerFn({ method: "GET" })
     };
   });
 
+export const getStoreWithProductsBySlugFn = createServerFn({ method: "GET" })
+  .inputValidator((slug: string) => slug)
+  .handler(async ({ data: slug }) => {
+    const db = getDb();
+    const rows = await db
+      .select({
+        id: stores.id,
+        ownerUserId: stores.ownerUserId,
+        name: stores.name,
+        slug: stores.slug,
+        description: stores.description,
+        plan: stores.plan,
+        pdvAccess: stores.pdvAccess,
+        pdvEnabled: stores.pdvEnabled,
+        createdAt: stores.createdAt,
+      })
+      .from(stores)
+      .where(eq(stores.slug, slug))
+      .limit(1);
+
+    const row = rows[0];
+    if (!row) return null;
+
+    return {
+      store: {
+        id: row.id,
+        ownerUserId: row.ownerUserId,
+        name: row.name,
+        slug: row.slug,
+        description: row.description,
+        plan: row.plan,
+        pdvAccess: row.pdvAccess,
+        pdvEnabled: row.pdvEnabled,
+        createdAt: row.createdAt.toISOString(),
+      },
+      products: [],
+    };
+  });
+
 export const syncStoreToDbFn = createServerFn({ method: "POST" })
   .inputValidator(
     (data: {
