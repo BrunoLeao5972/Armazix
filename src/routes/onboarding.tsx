@@ -1,8 +1,7 @@
 import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { PlatformHeader } from "@/components/PlatformHeader";
-import { normalizeSlug, useAuth, useTenant, selectStoreOfUser } from "@/lib/store";
-import { createStoreFn } from "@/lib/storeFns";
+import { useAuth, useTenant, selectStoreOfUser } from "@/lib/store";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
@@ -27,33 +26,16 @@ function OnboardingPage() {
   const [form, setForm] = useState({ name: "", slug: "", description: "" });
   const [err, setErr] = useState("");
 
-  const slugify = (v: string) => normalizeSlug(v);
+  const slugify = (v: string) =>
+    v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
-  const submit = async (e: React.FormEvent) => {
+  const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setErr("");
-    try {
-      // Criar no servidor primeiro
-      const serverStore = await createStoreFn({
-        data: {
-          name: form.name,
-          slug: form.slug,
-          description: form.description,
-          ownerUserId: userId,
-        },
-      });
-      // Depois salvar no Zustand local
-      const r = createStore(userId, {
-        name: serverStore.name,
-        slug: serverStore.slug,
-        description: serverStore.description,
-      });
-      if (!r.ok) return setErr(r.error);
-      attachStore(userId, r.storeId);
-      navigate({ to: "/admin" });
-    } catch (error) {
-      setErr(error instanceof Error ? error.message : "Erro ao criar loja");
-    }
+    const r = createStore(userId, form);
+    if (!r.ok) return setErr(r.error);
+    attachStore(userId, r.storeId);
+    navigate({ to: "/admin" });
   };
 
   return (
@@ -89,7 +71,7 @@ function OnboardingPage() {
             />
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium">Endereço da loja</span>
+            <span className="font-medium">Link da loja</span>
             <div className="flex items-center rounded-md border border-input bg-background pl-3">
               <span className="text-sm text-muted-foreground">/loja/</span>
               <input
@@ -101,7 +83,6 @@ function OnboardingPage() {
                 className="flex-1 bg-transparent px-2 py-2 outline-none"
               />
             </div>
-            <p className="text-xs text-muted-foreground">Apenas letras e números, sem espaços</p>
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium">Descrição curta</span>

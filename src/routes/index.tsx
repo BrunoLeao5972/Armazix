@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { PlatformHeader } from "@/components/PlatformHeader";
 import { PublicStoreView } from "@/components/PublicStoreView";
 import { getStoreSlugFromWindowHost } from "@/lib/domain";
-
 import {
   Check,
   Package,
@@ -19,15 +18,6 @@ import {
   ArrowRight,
   Play,
   Monitor,
-  Flame,
-  Coffee,
-  CakeSlice,
-  Shirt,
-  Sparkle,
-  Flower2,
-  Smartphone,
-  BookOpen,
-  UtensilsCrossed,
 } from "lucide-react";
 import heroImg from "@/assets/hero-entrepreneur.jpg";
 import dashboardImg from "@/assets/dashboard-preview.jpg";
@@ -36,95 +26,19 @@ import productsImg from "@/assets/products-flatlay.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Crie sua loja online grátis | Plataforma de e-commerce para lojistas | Armazix" },
+      { title: "Armazix — Crie sua loja online em minutos" },
       {
         name: "description",
         content:
-          "Crie sua loja online grátis com a Armazix. Plataforma de e-commerce para lojistas venderem mais, cadastrar produtos, receber pedidos e começar sua loja em minutos.",
+          "Plataforma multi-loja para empreendedores: cadastre produtos, receba pedidos e compartilhe sua loja com um link único.",
       },
-      {
-        name: "keywords",
-        content:
-          "loja online, e-commerce, ecommerce, criar loja online, comece sua loja grátis, plataforma para lojas, loja virtual, sistema para lojistas, vender online",
-      },
-      { name: "robots", content: "index, follow, max-image-preview:large" },
-      { property: "og:title", content: "Crie sua loja online grátis com a Armazix" },
+      { property: "og:title", content: "Armazix — Sua loja online" },
       {
         property: "og:description",
-        content: "Monte sua loja virtual, cadastre produtos e receba pedidos com uma plataforma feita para pequenos lojistas.",
+        content: "Crie sua loja online grátis e comece a vender hoje.",
       },
-      { property: "og:type", content: "website" },
       { property: "og:image", content: heroImg },
-      { name: "twitter:title", content: "Crie sua loja online grátis com a Armazix" },
-      {
-        name: "twitter:description",
-        content: "Plataforma de e-commerce para criar sua loja, vender online e organizar pedidos em minutos.",
-      },
       { name: "twitter:image", content: heroImg },
-      {
-        "script:ld+json": {
-          "@context": "https://schema.org",
-          "@type": "SoftwareApplication",
-          name: "Armazix",
-          applicationCategory: "BusinessApplication",
-          operatingSystem: "Web",
-          description:
-            "Plataforma de e-commerce para criar loja online, cadastrar produtos, receber pedidos e começar a vender pela internet.",
-          offers: {
-            "@type": "Offer",
-            price: "0",
-            priceCurrency: "BRL",
-          },
-          keywords: "loja online, e-commerce, criar loja online, loja virtual, comece sua loja grátis",
-        },
-      },
-      {
-        "script:ld+json": {
-          "@context": "https://schema.org",
-          "@type": "Organization",
-          name: "Armazix",
-          description: "Plataforma para lojistas criarem e gerenciarem lojas online.",
-          slogan: "Crie sua loja online grátis",
-        },
-      },
-      {
-        "script:ld+json": {
-          "@context": "https://schema.org",
-          "@type": "FAQPage",
-          mainEntity: [
-            {
-              "@type": "Question",
-              name: "Como criar uma loja online grátis?",
-              acceptedAnswer: {
-                "@type": "Answer",
-                text: "Na Armazix você cria sua conta, cadastra produtos e publica sua loja com um link público em poucos minutos.",
-              },
-            },
-            {
-              "@type": "Question",
-              name: "A Armazix serve para e-commerce local?",
-              acceptedAnswer: {
-                "@type": "Answer",
-                text: "Sim. A plataforma atende lojas locais com catálogo online, pedidos e gestão simples para vender por cidade e bairro.",
-              },
-            },
-            {
-              "@type": "Question",
-              name: "Preciso de conhecimento técnico para começar?",
-              acceptedAnswer: {
-                "@type": "Answer",
-                text: "Não. A proposta da Armazix é facilitar o e-commerce para pequenos lojistas sem complexidade técnica.",
-              },
-            },
-          ],
-        },
-      },
-    ],
-    links: [
-      {
-        rel: "canonical",
-        href: "/",
-      },
     ],
   }),
   component: Landing,
@@ -132,15 +46,12 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   const [mounted, setMounted] = useState(false);
-  const [hostSlug, setHostSlug] = useState<string | null>(null);
-  const [pdvOn, setPdvOn] = useState<Record<string, boolean>>({});
-
   useEffect(() => {
     setMounted(true);
-    setHostSlug(getStoreSlugFromWindowHost());
   }, []);
-
-  if (mounted && hostSlug) {
+  const hostSlug = mounted ? getStoreSlugFromWindowHost() : null;
+  const [pdvOn, setPdvOn] = useState<Record<string, boolean>>({});
+  if (hostSlug) {
     return (
       <PublicStoreView
         slug={hostSlug}
@@ -197,7 +108,7 @@ function Landing() {
     },
     {
       name: "Pro",
-      badge: "O Mais escolhido",
+      badge: "O Mais escolhido🔥",
       price: "R$ 39,90",
       cadence: "/mes",
       perDay: "A partir de R$ 1,33/dia",
@@ -391,22 +302,20 @@ function Landing() {
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             {[
-              { icon: Coffee, n: "Cafeterias" },
-              { icon: CakeSlice, n: "Confeitarias" },
-              { icon: Shirt, n: "Moda" },
-              { icon: Sparkle, n: "Beleza" },
-              { icon: Flower2, n: "Floriculturas" },
-              { icon: Smartphone, n: "Eletrônicos" },
-              { icon: BookOpen, n: "Livrarias" },
-              { icon: UtensilsCrossed, n: "Restaurantes" },
+              { e: "☕", n: "Cafeterias" },
+              { e: "🍰", n: "Confeitarias" },
+              { e: "👕", n: "Moda" },
+              { e: "💄", n: "Beleza" },
+              { e: "🌷", n: "Floriculturas" },
+              { e: "📱", n: "Eletrônicos" },
+              { e: "📚", n: "Livrarias" },
+              { e: "🥘", n: "Restaurantes" },
             ].map((c) => (
               <div
                 key={c.n}
                 className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
               >
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                  <c.icon className="h-4 w-4" />
-                </span>
+                <span className="text-lg">{c.e}</span>
                 <span className="font-medium text-foreground">{c.n}</span>
               </div>
             ))}
@@ -564,22 +473,32 @@ function Landing() {
                     : "border-border bg-card text-card-foreground",
               ].join(" ")}
             >
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 min-w-0">
-                  <h3 className="text-2xl font-semibold whitespace-nowrap">{plan.name}</h3>
-                  <span
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p
                     className={[
-                      "shrink-0 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap",
-                      plan.featured
-                        ? "bg-primary-foreground/15 text-primary-foreground"
-                        : plan.premium
-                          ? "bg-background/10 text-background"
-                          : "bg-primary/10 text-primary",
+                      "text-sm font-medium",
+                      plan.featured || plan.premium
+                        ? "text-primary-foreground/80"
+                        : "text-muted-foreground",
                     ].join(" ")}
                   >
-                    {plan.badge}
-                  </span>
+                    Plano {plan.name}
+                  </p>
+                  <h3 className="mt-1 text-2xl font-semibold">{plan.name}</h3>
                 </div>
+                <span
+                  className={[
+                    "rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]",
+                    plan.featured
+                      ? "bg-primary-foreground/15 text-primary-foreground"
+                      : plan.premium
+                        ? "bg-background/10 text-background"
+                        : "bg-primary/10 text-primary",
+                  ].join(" ")}
+                >
+                  {plan.badge}
+                </span>
               </div>
 
               <div className="mt-6">
@@ -863,65 +782,11 @@ function Landing() {
         </div>
       </section>
 
-      {/* SEO CONTENT */}
-      <section className="mx-auto max-w-7xl px-6 py-20">
-        <div className="grid gap-6 rounded-3xl border border-border bg-card p-8 shadow-[var(--shadow-sm)] lg:grid-cols-2">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-              Plataforma de e-commerce para lojas locais
-            </h2>
-            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              A Armazix foi criada para quem pesquisa por loja virtual simples,
-              e-commerce para pequenos negócios e sistema para vender online sem
-              complicação. Se você quer começar sua loja grátis e publicar seu
-              catálogo em poucos minutos, essa página foi feita para você.
-            </p>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              Funciona bem para comércio de bairro, lojas de cidade pequena,
-              operação local e vendas por WhatsApp. Você cria sua loja online,
-              compartilha um link público e organiza pedidos em um único painel.
-            </p>
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-foreground">Perguntas frequentes</h3>
-            <div className="mt-4 space-y-4 text-sm text-muted-foreground">
-              <div>
-                <p className="font-semibold text-foreground">
-                  Como criar uma loja online grátis?
-                </p>
-                <p>
-                  Clique em "Criar minha loja grátis", faça seu cadastro e
-                  publique os primeiros produtos para começar a vender.
-                </p>
-              </div>
-              <div>
-                <p className="font-semibold text-foreground">
-                  A Armazix serve para e-commerce local?
-                </p>
-                <p>
-                  Sim. Você pode vender para seu bairro e cidade com catálogo
-                  online, retirada na loja e gestão de pedidos.
-                </p>
-              </div>
-              <div>
-                <p className="font-semibold text-foreground">
-                  Preciso de conhecimento técnico para começar?
-                </p>
-                <p>
-                  Não. O foco é simplicidade para lojistas que querem sair da
-                  planilha e vender online rapidamente.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* TESTIMONIALS */}
       <section className="mx-auto max-w-7xl px-6 py-24">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
-            Quem usa, recomenda
+            Quem usa, recomenda 💚
           </h2>
           <p className="mt-3 text-muted-foreground">
             Histórias reais de lojistas que decolaram com a Armazix.

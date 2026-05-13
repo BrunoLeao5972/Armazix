@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "armazix",
+  "name": "tanstack-start-app",
   "compatibility_date": "2025-09-24",
   "compatibility_flags": ["nodejs_compat"],
   "main": "@tanstack/react-start/server-entry",
@@ -20,14 +20,5 @@
   ],
   "vars": {
     "APP_BASE_URL": "https://armazix.com.br"
-  },
-  "env": {
-    "staging": {
-      "name": "armazix-staging",
-      "workers_dev": true,
-      "vars": {
-        "APP_BASE_URL": "https://staging.armazix.com.br"
-      }
-    }
   }
 }
