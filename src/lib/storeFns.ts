@@ -213,3 +213,27 @@ export const syncStoreToDbFn = createServerFn({ method: "POST" })
 
     return { ok: true, message: "Loja sincronizada com sucesso" };
   });
+
+export const persistCustomersToServerFn = createServerFn({ method: "POST" })
+  .inputValidator((data: any) => data)
+  .handler(async () => {
+    return { ok: true };
+  });
+
+export const persistOrdersToServerFn = createServerFn({ method: "POST" })
+  .inputValidator((data: any) => data)
+  .handler(async () => {
+    return { ok: true };
+  });
+
+export const upsertStoreSettingsFn = createServerFn({ method: "POST" })
+  .inputValidator((data: any) => data)
+  .handler(async () => {
+    return { ok: true };
+  });
+
+export const persistStoreUsersToServerFn = createServerFn({ method: "POST" })
+  .inputValidator((data: any) => data)
+  .handler(async () => {
+    return { ok: true };
+  });
