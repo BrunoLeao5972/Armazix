@@ -68,7 +68,9 @@ export const getStoreBySlugFn = createServerFn({ method: "GET" })
   .inputValidator((slug: string) => slug)
   .handler(async ({ data: slug }) => {
     const db = getDb();
-    const rows = await db
+
+    // Try exact match first
+    let rows = await db
       .select({
         id: stores.id,
         ownerUserId: stores.ownerUserId,
@@ -83,6 +85,50 @@ export const getStoreBySlugFn = createServerFn({ method: "GET" })
       .from(stores)
       .where(eq(stores.slug, slug))
       .limit(1);
+
+    // Fallback: try matching slug with hyphens stripped (e.g. "bruno-info-mais" -> "brunoinfomais")
+    if (rows.length === 0 && slug.includes("-")) {
+      const cleanSlug = slug.replace(/-/g, "");
+      rows = await db
+        .select({
+          id: stores.id,
+          ownerUserId: stores.ownerUserId,
+          name: stores.name,
+          slug: stores.slug,
+          description: stores.description,
+          plan: stores.plan,
+          pdvAccess: stores.pdvAccess,
+          pdvEnabled: stores.pdvEnabled,
+          createdAt: stores.createdAt,
+        })
+        .from(stores)
+        .where(eq(stores.slug, cleanSlug))
+        .limit(1);
+    }
+
+    // Fallback: try finding a store whose slug stripped of hyphens matches
+    if (rows.length === 0) {
+      const allStores = await db
+        .select({
+          id: stores.id,
+          ownerUserId: stores.ownerUserId,
+          name: stores.name,
+          slug: stores.slug,
+          description: stores.description,
+          plan: stores.plan,
+          pdvAccess: stores.pdvAccess,
+          pdvEnabled: stores.pdvEnabled,
+          createdAt: stores.createdAt,
+        })
+        .from(stores);
+
+      const match = allStores.find((s) => s.slug.replace(/-/g, "") === slug);
+      if (match) {
+        // Auto-normalize slug in DB
+        await db.update(stores).set({ slug }).where(eq(stores.id, match.id));
+        rows = [{ ...match, slug }];
+      }
+    }
 
     const row = rows[0];
     if (!row) return null;
