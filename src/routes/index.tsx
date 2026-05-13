@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { getRequest } from "@tanstack/react-start-server";
 import { PlatformHeader } from "@/components/PlatformHeader";
 import { PublicStoreView } from "@/components/PublicStoreView";
 import { getStoreSlugFromWindowHost, getStoreSlugFromHostname } from "@/lib/domain";
@@ -26,17 +25,14 @@ import dashboardImg from "@/assets/dashboard-preview.jpg";
 import productsImg from "@/assets/products-flatlay.jpg";
 
 export const Route = createFileRoute("/")({
-  loader: async () => {
+  loader: async ({ request }) => {
     try {
-      const request = getRequest();
-      if (request) {
-        const url = new URL(request.url);
-        const slug = getStoreSlugFromHostname(url.hostname);
-        if (slug) {
-          const store = await getStoreBySlugFn({ data: slug });
-          if (store) {
-            return { storeSlug: slug, store };
-          }
+      const url = new URL(request.url);
+      const slug = getStoreSlugFromHostname(url.hostname);
+      if (slug) {
+        const store = await getStoreBySlugFn({ data: slug });
+        if (store) {
+          return { storeSlug: slug, store };
         }
       }
     } catch {
