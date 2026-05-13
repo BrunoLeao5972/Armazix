@@ -23,7 +23,7 @@ function OnboardingPage() {
   const navigate = useNavigate();
   const userId = useAuth((s) => s.currentUserId)!;
   const attachStore = useAuth((s) => s.attachStore);
-  const createStore = useTenant((s) => s.createStore);
+  const upsertStoreFromServer = useTenant((s) => s.upsertStoreFromServer);
   const [form, setForm] = useState({ name: "", slug: "", description: "" });
   const [err, setErr] = useState("");
 
@@ -44,8 +44,13 @@ function OnboardingPage() {
         },
       });
 
-      const r = createStore(userId, form);
-      if (!r.ok) return setErr(r.error);
+      upsertStoreFromServer({
+        id: serverStore.id,
+        ownerId: userId,
+        name: serverStore.name,
+        slug: serverStore.slug,
+        description: serverStore.description,
+      });
       attachStore(userId, serverStore.id);
       navigate({ to: "/admin" });
     } catch (error: any) {

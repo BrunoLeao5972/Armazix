@@ -269,6 +269,7 @@ type TenantState = {
   ) => { ok: true; storeId: string } | { ok: false; error: string };
   updateStore: (storeId: string, patch: Partial<Store>) => void;
   upgradePlan: (storeId: string, plan: Plan) => void;
+  upsertStoreFromServer: (store: Partial<Store> & { id: string; ownerId: string; name: string; slug: string }) => void;
   // products
   addProduct: (storeId: string, p: Omit<Product, "id" | "storeId" | "code">) => { ok: boolean; error?: string };
   updateProduct: (id: string, patch: Partial<Product>) => void;
@@ -350,6 +351,56 @@ export const useTenant = create<TenantState>()(
             s.id === storeId ? { ...s, plan } : s,
           ),
         }),
+      upsertStoreFromServer: (serverStore) => {
+        const existing = get().stores.find((s) => s.id === serverStore.id);
+        if (existing) {
+          set({
+            stores: get().stores.map((s) =>
+              s.id === serverStore.id ? { ...s, ...serverStore } : s,
+            ),
+          });
+        } else {
+          const newStore: Store = {
+            id: serverStore.id,
+            ownerId: serverStore.ownerId,
+            name: serverStore.name,
+            slug: serverStore.slug,
+            taxId: "",
+            cnpj: "",
+            address: "",
+            addressInfo: { ...DEFAULT_ADDRESS_INFO },
+            description: serverStore.description ?? "",
+            businessHours: DEFAULT_BUSINESS_HOURS.map((h) => ({ ...h })),
+            phones: [""],
+            whatsapp: "",
+            categories: [],
+            delivery: {
+              pickup: true,
+              localDelivery: false,
+              fee: 0,
+              fees: DEFAULT_DELIVERY_FEES.map((f) => ({ ...f })),
+            },
+            payments: {
+              pix: true,
+              card: true,
+              cash: false,
+              credit: true,
+              debit: true,
+              pixKeyType: "random",
+              pixBank: "",
+              pixKey: "",
+              pixReceiverName: "",
+              pixReceiverDocument: "",
+              pixQrCode: "",
+            },
+            plan: (serverStore.plan as Plan) ?? "free",
+            pdvAccess: serverStore.pdvAccess ?? false,
+            pdvEnabled: serverStore.pdvEnabled ?? false,
+            createdAt: Date.now(),
+          };
+          set({ stores: [...get().stores, newStore] });
+        }
+      },
       addProduct: (storeId, p) => {
         const store = get().stores.find((s) => s.id === storeId);
         const plan: Plan = store?.plan ?? "free";
