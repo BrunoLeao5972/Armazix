@@ -26,7 +26,7 @@ export const createStoreFn = createServerFn({ method: "POST" })
           .string()
           .min(1, "Slug é obrigatório")
           .max(100)
-          .regex(/^[a-z0-9-]+$/, "Slug inválido"),
+          .regex(/^[a-z0-9]+$/, "Slug inválido — use apenas letras minúsculas e números"),
         description: z.string().max(500).default(""),
         ownerUserId: z.string().uuid("ID de usuário inválido"),
       })
@@ -34,14 +34,16 @@ export const createStoreFn = createServerFn({ method: "POST" })
 
     const db = getDb();
 
-    const existing = await db
-      .select({ id: stores.id })
-      .from(stores)
-      .where(eq(stores.slug, parsed.slug))
-      .limit(1);
+    const [existingSlug, existingName] = await Promise.all([
+      db.select({ id: stores.id }).from(stores).where(eq(stores.slug, parsed.slug)).limit(1),
+      db.select({ id: stores.id }).from(stores).where(eq(stores.name, parsed.name.trim())).limit(1),
+    ]);
 
-    if (existing.length > 0) {
-      throw new Error("Slug já em uso");
+    if (existingSlug.length > 0) {
+      throw new Error("Este link de loja já está em uso");
+    }
+    if (existingName.length > 0) {
+      throw new Error("Já existe uma loja com esse nome");
     }
 
     const [store] = await db
@@ -186,7 +188,7 @@ export const syncStoreToDbFn = createServerFn({ method: "POST" })
     const parsed = z
       .object({
         name: z.string().min(1).max(100),
-        slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/),
+        slug: z.string().min(1).max(100).regex(/^[a-z0-9]+$/),
         description: z.string().max(500).default(""),
         ownerUserId: z.string().uuid(),
       })

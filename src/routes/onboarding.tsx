@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PlatformHeader } from "@/components/PlatformHeader";
 import { useAuth, useTenant, selectStoreOfUser } from "@/lib/store";
-import { createStoreFn } from "@/lib/storeFns";
+import { createStoreFn, getStoreByOwnerFn } from "@/lib/storeFns";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
@@ -26,9 +26,33 @@ function OnboardingPage() {
   const upsertStoreFromServer = useTenant((s) => s.upsertStoreFromServer);
   const [form, setForm] = useState({ name: "", slug: "", description: "" });
   const [err, setErr] = useState("");
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    getStoreByOwnerFn({ data: userId })
+      .then((serverStore) => {
+        if (serverStore) {
+          upsertStoreFromServer({
+            id: serverStore.id,
+            ownerId: serverStore.ownerUserId,
+            name: serverStore.name,
+            slug: serverStore.slug,
+            description: serverStore.description,
+            plan: serverStore.plan as import("@/lib/plans").Plan | undefined,
+            pdvAccess: serverStore.pdvAccess,
+            pdvEnabled: serverStore.pdvEnabled,
+          });
+          attachStore(userId, serverStore.id);
+          navigate({ to: "/admin" });
+        } else {
+          setChecking(false);
+        }
+      })
+      .catch(() => setChecking(false));
+  }, [userId]);
 
   const slugify = (v: string) =>
-    v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    v.toLowerCase().replace(/[^a-z0-9]+/g, "");
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +92,9 @@ function OnboardingPage() {
             Escolha um nome e o link público da sua loja.
           </p>
         </div>
+        {checking ? (
+          <p className="text-sm text-muted-foreground">Verificando loja existente...</p>
+        ) : (
         <form onSubmit={submit} className="flex flex-col gap-4">
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium">Nome da loja</span>
@@ -93,7 +120,6 @@ function OnboardingPage() {
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium">Link da loja</span>
             <div className="flex items-center rounded-md border border-input bg-background pl-3">
-              <span className="text-sm text-muted-foreground">/loja/</span>
               <input
                 required
                 value={form.slug}
@@ -101,7 +127,9 @@ function OnboardingPage() {
                   setForm({ ...form, slug: slugify(e.target.value) })
                 }
                 className="flex-1 bg-transparent px-2 py-2 outline-none"
+                placeholder="seulink"
               />
+              <span className="text-sm text-muted-foreground">.armazix.com.br</span>
             </div>
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
@@ -120,6 +148,7 @@ function OnboardingPage() {
             Criar loja
           </button>
         </form>
+        )}
       </div>
     </div>
   );
