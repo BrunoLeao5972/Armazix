@@ -185,6 +185,8 @@ export const syncStoreToDbFn = createServerFn({ method: "POST" })
     }) => data,
   )
   .handler(async ({ data }) => {
+    const rawSlug = data.slug.replace(/[^a-z0-9]+/g, "");
+
     const parsed = z
       .object({
         name: z.string().min(1).max(100),
@@ -192,28 +194,34 @@ export const syncStoreToDbFn = createServerFn({ method: "POST" })
         description: z.string().max(500).default(""),
         ownerUserId: z.string().uuid(),
       })
-      .parse(data);
+      .parse({ ...data, slug: rawSlug });
 
     const db = getDb();
 
     const existing = await db
-      .select({ id: stores.id })
+      .select({ id: stores.id, slug: stores.slug })
       .from(stores)
-      .where(eq(stores.slug, parsed.slug))
+      .where(eq(stores.ownerUserId, parsed.ownerUserId))
       .limit(1);
 
     if (existing.length > 0) {
-      return { ok: true, message: "Loja já existe no servidor" };
+      if (existing[0].slug !== parsed.slug) {
+        await db
+          .update(stores)
+          .set({ slug: parsed.slug, name: parsed.name.trim(), description: parsed.description.trim() })
+          .where(eq(stores.id, existing[0].id));
+      }
+      return { ok: true, message: "Loja já existe no servidor", id: existing[0].id, slug: parsed.slug };
     }
 
-    await db.insert(stores).values({
+    const [inserted] = await db.insert(stores).values({
       name: parsed.name.trim(),
       slug: parsed.slug,
       description: parsed.description.trim(),
       ownerUserId: parsed.ownerUserId,
-    });
+    }).returning({ id: stores.id, slug: stores.slug });
 
-    return { ok: true, message: "Loja sincronizada com sucesso" };
+    return { ok: true, message: "Loja sincronizada com sucesso", id: inserted.id, slug: inserted.slug };
   });
 
 export const persistCustomersToServerFn = createServerFn({ method: "POST" })

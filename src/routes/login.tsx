@@ -36,6 +36,7 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const navigate = useNavigate();
   const setCurrentUser = useAuth((s) => s.setCurrentUser);
+  const attachStore = useAuth((s) => s.attachStore);
   const upsertStoreFromServer = useTenant((s) => s.upsertStoreFromServer);
   const localStore = useTenant((s) => s.stores[0] ?? null);
   const [form, setForm] = useState({ email: "", password: "" });
@@ -67,7 +68,7 @@ function LoginPage() {
         navigate({ to: "/admin" });
       } else if (localStore) {
         // Loja existe localmente (Zustand) mas nao no DB — sincroniza
-        await syncStoreToDbFn({
+        const syncResult = await syncStoreToDbFn({
           data: {
             name: localStore.name,
             slug: localStore.slug,
@@ -75,6 +76,16 @@ function LoginPage() {
             ownerUserId: result.userId,
           },
         });
+        if (syncResult.id) {
+          upsertStoreFromServer({
+            id: syncResult.id,
+            ownerId: result.userId,
+            name: localStore.name,
+            slug: syncResult.slug,
+            description: localStore.description,
+          });
+          attachStore(result.userId, syncResult.id);
+        }
         navigate({ to: "/admin" });
       } else {
         navigate({ to: "/onboarding" });

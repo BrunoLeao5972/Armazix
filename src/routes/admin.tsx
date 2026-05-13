@@ -87,6 +87,7 @@ function AdminLayout() {
     userId ? s.stores.find((x) => x.ownerId === userId) : null,
   );
   const store = storeFromState;
+  const upsertStoreFromServer = useTenant((s) => s.upsertStoreFromServer);
   const path = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
@@ -98,6 +99,16 @@ function AdminLayout() {
           description: store.description || "",
           ownerUserId: userId,
         },
+      }).then((result) => {
+        if (result.id && result.slug !== store.slug) {
+          upsertStoreFromServer({
+            id: result.id,
+            ownerId: userId,
+            name: store.name,
+            slug: result.slug,
+            description: store.description || "",
+          });
+        }
       }).catch(() => {
         // ignorar erros de sincronização silenciosa
       });
