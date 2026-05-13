@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { PlatformHeader } from "@/components/PlatformHeader";
 import { PublicStoreView } from "@/components/PublicStoreView";
 import { getStoreSlugFromWindowHost } from "@/lib/domain";
+import { getStoreBySlugFn } from "@/lib/storeFns";
 import {
   Check,
   Package,
@@ -46,20 +47,46 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   const [mounted, setMounted] = useState(false);
+  const [serverData, setServerData] = useState<{
+    store: { id: string; name: string; slug: string; description: string; plan: string; logoUrl?: string | null; whatsapp?: string | null; address?: string | null; banners?: { imageUrl: string; title: string; subtitle: string; autoAdvanceSeconds: number }[] | null };
+    products: { id: string; storeId: string; name: string; description: string; price: number; stock: number; imageUrl?: string | null; active: boolean; featured: boolean; onPromotion: boolean; promotionPrice?: number | null; category: string; code: number; unit: string; minStock: number; images?: unknown; variations?: unknown }[];
+  } | null>(null);
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const hostSlug = mounted ? getStoreSlugFromWindowHost() : null;
+
+  useEffect(() => {
+    if (!hostSlug) return;
+    getStoreBySlugFn({ data: hostSlug })
+      .then((result) => {
+        if (result) {
+          setServerData({ store: result, products: [] });
+        }
+      })
+      .catch(() => {});
+  }, [hostSlug]);
+
   const [pdvOn, setPdvOn] = useState<Record<string, boolean>>({});
 
-  if (hostSlug) {
+  if (hostSlug && serverData) {
     return (
       <PublicStoreView
         slug={hostSlug}
         rootHref="/"
         checkoutHref={`/loja/${hostSlug}/checkout`}
+        serverData={serverData}
       />
+    );
+  }
+
+  if (hostSlug && !serverData) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+        Carregando loja...
+      </div>
     );
   }
 
